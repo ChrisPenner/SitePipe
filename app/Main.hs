@@ -1,14 +1,21 @@
+{-# language DeriveGeneric #-}
 module Main where
 
-import SitePipe.Pipes
-import SitePipe.Templating
-import Control.Monad
-import Control.Monad.Except
+import Data.Aeson
+import GHC.Generics
+
+import SitePipe
+
+data Post = Post
+  { filepath :: String
+  , content :: String
+  , tags :: Maybe [String]
+  } deriving (Show, Generic)
+
+instance FromJSON Post
+instance ToJSON Post
 
 main :: IO ()
-main = void . runExceptT $ do
-  example <- liftIO $ readFile "example.md"
-  template <- liftIO $ readFile "example.html"
-  (env, post) <- parseMarkdownResource "example.md" example
-  result <- render "example.md" template (toResource env post)
-  liftIO $ putStr result
+main = site $ do
+  results <- simpleResource "*.md" "example.html"
+  print results

@@ -1,4 +1,5 @@
 ---
+name: Example
 tags: [tech, programming, python]
 ---
 

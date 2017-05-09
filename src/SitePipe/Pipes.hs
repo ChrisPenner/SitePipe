@@ -1,63 +1,89 @@
 {-# language OverloadedStrings #-}
 module SitePipe.Pipes
-  -- ( splitMeta
-  -- , parseMeta
-  -- , parseMarkdown
-  -- )
+  ( parseResource
+  , toResources
+  , PandocReader
+  , site
+  )
     where
 
-import Text.Megaparsec
+import Text.Megaparsec as MP
 import Text.Megaparsec.String
-import Control.Monad.Catch hiding (try)
+import Control.Monad.Catch as Catch
+import Control.Arrow
 import Data.ByteString.Char8 (pack)
-
-import Text.Pandoc
+import Data.Maybe
+import Data.Aeson.Lens
+import Data.Aeson.Types hiding (Parser, parse)
+import Data.Either
+import Control.Lens
+import Control.Monad.Except
 import qualified Data.Text as T
 
-import Data.Yaml (Object, decodeEither, Value(..))
-import qualified Data.HashMap.Strict as HM
+import Text.Pandoc hiding (Null)
+
+import Data.Yaml (decodeEither, Value(..))
+import qualified Data.HashMap.Lazy as HM
 
 import SitePipe.Error
 
-type Resource = Object
-type Env = Object
+site :: IO () -> IO ()
+site spec = do
+  result <- Catch.try spec :: IO (Either SitePipeError ())
+  case result of
+    Left err -> print "ERR!" >> print err
+    Right _ -> return ()
 
-toResource :: Object -> Pandoc -> Resource
-toResource obj pandoc = HM.insert "content" (String . T.pack $ writeResult pandoc) obj
+toResource :: Value -> Pandoc -> Value
+toResource obj pandoc = obj & (_Object . at "content") ?~ String (T.pack $ writeResult pandoc)
 
-parseMarkdownResource :: MonadThrow m => String -> String -> m (Object, Pandoc)
-parseMarkdownResource ident source = do
+toResources :: (MonadThrow m, FromJSON a) => [Value] -> m [a]
+toResources objs =
+  let (errs, results) = (lefts &&& rights) . fmap (parseEither parseJSON) $ objs
+   in case listToMaybe errs of
+        Just err -> throwM (JSONErr err)
+        Nothing -> return results
+
+parseResource :: MonadThrow m => PandocReader -> String -> String -> m Value
+parseResource reader ident source = do
   (metaBlock, contents) <- splitMeta ident source
   metaObj <- parseMeta metaBlock
-  pandoc <- parseMarkdown contents
-  return (metaObj, pandoc)
+  pandoc <- runReader reader contents
+  return $ toResource metaObj pandoc
+
+resourceP :: Parser (String, String)
+resourceP = do
+  yaml <- fromMaybe "" <$> optional yamlParser
+  space
+  rest <- manyTill anyChar eof
+  return (yaml, rest)
 
 writeResult :: Pandoc -> String
 writeResult = writeHtmlString def
 
 splitMeta :: MonadThrow m => String -> String -> m (String, String)
 splitMeta ident str =
-  case parse yamlParser ident str of
+  case parse resourceP ident str of
     Left err -> throwM (MParseErr err)
     Right res -> return res
 
-yamlParser :: Parser (String, String)
+yamlParser :: Parser String
 yamlParser = do
   _ <- yamlSep
-  yamlMap <- manyTill anyChar (try (eol >> yamlSep))
-  space
-  rest <- manyTill anyChar eof
-  return (yamlMap, rest)
+  manyTill anyChar (MP.try (eol >> yamlSep))
     where
       yamlSep = string "---" >> eol
 
-parseMeta :: MonadThrow m => String -> m Object
+parseMeta :: MonadThrow m => String -> m Value
 parseMeta metaBlock =
   case decodeEither (pack metaBlock) of
     Left err -> throwM (YamlErr err)
-    Right metaObj -> return metaObj
+    Right (Object metaObj) -> return (Object metaObj)
+    Right Null -> return (Object HM.empty)
+    Right _ -> throwM (YamlErr "Top level yaml must be key-value pairs")
 
-parseMarkdown :: MonadThrow m => String -> m Pandoc
-parseMarkdown mkdn = case readMarkdown def mkdn of
+type PandocReader = ReaderOptions -> String -> Either PandocError Pandoc
+runReader :: MonadThrow m => PandocReader -> String -> m Pandoc
+runReader reader source = case reader def source of
                   Left pandocError -> throwM (PandocErr pandocError)
                   Right res -> return res
