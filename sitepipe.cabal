@@ -18,6 +18,8 @@ library
   exposed-modules:     SitePipe.Pipes
                      , SitePipe.Templating
                      , SitePipe.Files
+                     , SitePipe.Parse
+                     , SitePipe.Types
   build-depends:       base >= 4.7 && < 5
                      , unordered-containers
                      , containers

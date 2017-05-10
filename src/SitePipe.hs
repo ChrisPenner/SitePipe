@@ -2,7 +2,8 @@ module SitePipe
   ( module X
   ) where
 
-import SitePipe.Error as X
+import SitePipe.Types as X
+import SitePipe.Parse as X
 import SitePipe.Files as X
 import SitePipe.Pipes as X
 import SitePipe.Templating as X

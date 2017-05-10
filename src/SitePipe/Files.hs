@@ -1,40 +1,24 @@
 {-# language RankNTypes #-}
 {-# language OverloadedStrings #-}
 module SitePipe.Files
-  ( fromFile
-  , glob
-  , resourceGlob
+  ( resourceGlob
   , loadTemplate
   , simpleResource
   ) where
 
-import Text.Pandoc (readMarkdown)
 import Control.Monad.Catch
 import Control.Monad.IO.Class
 import SitePipe.Pipes
-import SitePipe.Error
+import SitePipe.Types
 import SitePipe.Templating
 import qualified System.FilePath.Glob as G
-import Control.Lens
-import Control.Monad
-import Data.Aeson.Lens
 import Data.Aeson
 import Text.Mustache
-import qualified Data.Text as T
 
-type TemplatePath = String
-type Pattern = String
-
-fromFile :: (MonadIO m, MonadThrow m) => PandocReader -> String -> m Value
-fromFile reader path = do
-  source <- liftIO $ readFile path
-  (_Object . at "filepath" ?~ String (T.pack path)) <$> parseResource reader path source
-
-glob :: (MonadIO m, MonadThrow m) => PandocReader -> Pattern -> m [Value]
-glob reader pat = liftIO (G.glob pat) >>= traverse (fromFile reader)
-
-resourceGlob :: (FromJSON resource, MonadIO m, MonadThrow m) => PandocReader -> String -> m [resource]
-resourceGlob reader = glob reader >=> toResources
+resourceGlob :: (FromJSON resource, MonadIO m, MonadThrow m) => Pipe m resource -> String -> m [resource]
+resourceGlob pipe pattern = do
+  filenames <- liftIO $ G.glob pattern
+  traverse (loadResource pipe) filenames
 
 loadTemplate :: (MonadIO m, MonadThrow m) => String -> m Template
 loadTemplate filePath = do
@@ -46,5 +30,5 @@ loadTemplate filePath = do
 simpleResource :: (MonadIO m, MonadThrow m) => Pattern -> TemplatePath -> m [String]
 simpleResource pattern templatePath = do
   template <- loadTemplate templatePath
-  resources <- resourceGlob readMarkdown pattern
+  resources <- resourceGlob (markdownPipe template) pattern
   traverse (renderTemplate template) (resources :: [Value])

@@ -1,89 +1,65 @@
+{-# language RecordWildCards #-}
 {-# language OverloadedStrings #-}
 module SitePipe.Pipes
-  ( parseResource
-  , toResources
-  , PandocReader
+  ( loadResource
   , site
+  , markdownPipe
+  , Pipe(..)
+  , getContent
+  , getFilepath
   )
     where
 
-import Text.Megaparsec as MP
-import Text.Megaparsec.String
 import Control.Monad.Catch as Catch
-import Control.Arrow
-import Data.ByteString.Char8 (pack)
-import Data.Maybe
 import Data.Aeson.Lens
 import Data.Aeson.Types hiding (Parser, parse)
-import Data.Either
 import Control.Lens
-import Control.Monad.Except
+import Control.Monad.IO.Class
 import qualified Data.Text as T
 
-import Text.Pandoc hiding (Null)
+import Text.Pandoc hiding (Null, renderTemplate)
 
-import Data.Yaml (decodeEither, Value(..))
-import qualified Data.HashMap.Lazy as HM
+import SitePipe.Parse
+import SitePipe.Types
+import SitePipe.Templating
+import qualified Text.Mustache as M
 
-import SitePipe.Error
+markdownPipe :: (MonadThrow m, MonadIO m, FromJSON a, ToJSON a) => M.Template -> Pipe m a
+markdownPipe template = Pipe
+  { pandocReader=readMarkdown def
+  , transformResource=id
+  , transformContent=id
+  , pandocWriter=return . writeHtmlString def
+  , resourceWriter=renderTemplate template
+  }
 
 site :: IO () -> IO ()
 site spec = do
   result <- Catch.try spec :: IO (Either SitePipeError ())
   case result of
-    Left err -> print "ERR!" >> print err
+    Left err -> print err
     Right _ -> return ()
 
-toResource :: Value -> Pandoc -> Value
-toResource obj pandoc = obj & (_Object . at "content") ?~ String (T.pack $ writeResult pandoc)
+valueToResource :: (MonadThrow m, FromJSON a) => Value -> m a
+valueToResource obj =
+  case parseEither parseJSON obj of
+    Left err -> throwM (JSONErr err)
+    Right result -> return result
 
-toResources :: (MonadThrow m, FromJSON a) => [Value] -> m [a]
-toResources objs =
-  let (errs, results) = (lefts &&& rights) . fmap (parseEither parseJSON) $ objs
-   in case listToMaybe errs of
-        Just err -> throwM (JSONErr err)
-        Nothing -> return results
+runReader :: (MonadThrow m) => (String -> Either PandocError Pandoc) -> String -> m Pandoc
+runReader reader source = case reader source of
+                             Left err -> throwM err
+                             Right pandoc -> return pandoc
 
-parseResource :: MonadThrow m => PandocReader -> String -> String -> m Value
-parseResource reader ident source = do
-  (metaBlock, contents) <- splitMeta ident source
-  metaObj <- parseMeta metaBlock
-  pandoc <- runReader reader contents
-  return $ toResource metaObj pandoc
-
-resourceP :: Parser (String, String)
-resourceP = do
-  yaml <- fromMaybe "" <$> optional yamlParser
-  space
-  rest <- manyTill anyChar eof
-  return (yaml, rest)
-
-writeResult :: Pandoc -> String
-writeResult = writeHtmlString def
-
-splitMeta :: MonadThrow m => String -> String -> m (String, String)
-splitMeta ident str =
-  case parse resourceP ident str of
-    Left err -> throwM (MParseErr err)
-    Right res -> return res
-
-yamlParser :: Parser String
-yamlParser = do
-  _ <- yamlSep
-  manyTill anyChar (MP.try (eol >> yamlSep))
+loadResource :: (FromJSON a, MonadThrow m, MonadIO m) => Pipe m a -> String -> m a
+loadResource Pipe{..} filepath = do
+  file <- liftIO $ readFile filepath
+  (meta, source) <- processSource filepath file
+  pandoc <- transformContent <$> runReader pandocReader source
+  content <- pandocWriter pandoc
+  transformResource <$> valueToResource (addMeta content meta)
     where
-      yamlSep = string "---" >> eol
-
-parseMeta :: MonadThrow m => String -> m Value
-parseMeta metaBlock =
-  case decodeEither (pack metaBlock) of
-    Left err -> throwM (YamlErr err)
-    Right (Object metaObj) -> return (Object metaObj)
-    Right Null -> return (Object HM.empty)
-    Right _ -> throwM (YamlErr "Top level yaml must be key-value pairs")
-
-type PandocReader = ReaderOptions -> String -> Either PandocError Pandoc
-runReader :: MonadThrow m => PandocReader -> String -> m Pandoc
-runReader reader source = case reader def source of
-                  Left pandocError -> throwM (PandocErr pandocError)
-                  Right res -> return res
+      addMeta content meta =
+        meta
+        & _Object . at "filepath" ?~ String (T.pack filepath)
+        & _Object . at "content" ?~ String (T.pack content)
