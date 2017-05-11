@@ -15,7 +15,8 @@ cabal-version:       >=1.10
 
 library
   hs-source-dirs:      src
-  exposed-modules:     SitePipe.Pipes
+  exposed-modules:     SitePipe
+                     , SitePipe.Pipes
                      , SitePipe.Templating
                      , SitePipe.Files
                      , SitePipe.Parse

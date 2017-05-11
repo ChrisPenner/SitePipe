@@ -1,5 +1,6 @@
 {-# language RankNTypes #-}
 {-# language OverloadedStrings #-}
+{-# language RecordWildCards #-}
 module SitePipe.Files
   ( resourceGlob
   , loadTemplate
@@ -7,34 +8,37 @@ module SitePipe.Files
   ) where
 
 import Control.Monad.Catch
-import Control.Monad.IO.Class
+import Data.Foldable
 import SitePipe.Pipes
 import SitePipe.Types
-import SitePipe.Templating
 import qualified System.FilePath.Glob as G
 import Data.Aeson
 import Text.Mustache
 import System.Directory
+import System.FilePath.Posix
 
-resourceGlob :: (FromJSON resource, MonadIO m, MonadThrow m) => Pipe m resource -> String -> m [resource]
+resourceGlob :: (FromJSON resource) => Pipe resource -> String -> IO [resource]
 resourceGlob pipe pattern = do
-  filenames <- liftIO $ G.glob pattern
+  filenames <- G.glob pattern
   traverse (loadResource pipe) filenames
 
-loadTemplate :: (MonadIO m, MonadThrow m) => String -> m Template
+loadTemplate :: String -> IO Template
 loadTemplate filePath = do
-  mTemplate <- liftIO $ localAutomaticCompile filePath
+  mTemplate <- localAutomaticCompile filePath
   case mTemplate of
     Left err -> throwM $ TemplateParseErr err
     Right template -> return template
 
-simpleResource :: (MonadIO m, MonadThrow m) => Pattern -> TemplatePath -> String -> m [Value]
-simpleResource pattern templatePath outputDir = do
-  template <- loadTemplate templatePath
-  resources <- resourceGlob (markdownPipe template) pattern
-  renderedContent <- traverse (renderTemplate template) resources
-  let relPaths = getRelativeFilepath <$> resources
+simpleResource :: Pipe Value -> Pattern -> IO ()
+simpleResource pipe@(Pipe{..}) pattern = do
+  resources <- resourceGlob pipe pattern
+  createDirectoryIfMissing False "./dist"
+  withCurrentDirectory "./dist"
+    $ traverse_ (writeResource pipe) resources
 
-  liftIO . withCurrentDirectory outputDir $
-    traverse (uncurry writeFile) (zip relPaths renderedContent)
-  return resources
+writeResource :: Pipe a -> a -> IO ()
+writeResource (Pipe{..}) obj = do
+  renderedContent <- resourceWriter obj
+  url <- computeURL obj
+  createDirectoryIfMissing True $ takeDirectory url
+  writeFile url renderedContent

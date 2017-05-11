@@ -4,5 +4,6 @@ import SitePipe
 
 main :: IO ()
 main = site $ do
-  results <- simpleResource "temp/posts/**/*.md" "temp/templates/post.html" "dist"
+  template <- loadTemplate "temp/templates/post.html"
+  results <- simpleResource (markdownPipe template) "temp/posts/*.md"
   print results

@@ -22,12 +22,14 @@ import Control.Lens
 type TemplatePath = String
 type Pattern = String
 
-data Pipe m a = Pipe
+data Pipe a = Pipe
   { pandocReader :: String -> Either PandocError Pandoc
   , transformResource :: a -> a
   , transformContent :: Pandoc -> Pandoc
-  , pandocWriter :: Pandoc -> m String
-  , resourceWriter :: a -> m String
+  , pandocWriter :: Pandoc -> IO String
+  , resourceWriter :: a -> IO String
+  , computeURL :: a -> IO String
+  , outputDir :: String
   }
 
 getFilepath :: Value -> String

@@ -1,5 +1,6 @@
 {-# language RecordWildCards #-}
 {-# language OverloadedStrings #-}
+{-# language ViewPatterns #-}
 module SitePipe.Pipes
   ( loadResource
   , site
@@ -14,7 +15,6 @@ import Control.Monad.Catch as Catch
 import Data.Aeson.Lens
 import Data.Aeson.Types hiding (Parser, parse)
 import Control.Lens
-import Control.Monad.IO.Class
 import qualified Data.Text as T
 import System.FilePath.Posix
 import System.Directory
@@ -26,14 +26,19 @@ import SitePipe.Types
 import SitePipe.Templating
 import qualified Text.Mustache as M
 
-markdownPipe :: (MonadThrow m, MonadIO m, FromJSON a, ToJSON a) => M.Template -> Pipe m a
+markdownPipe :: (FromJSON a, ToJSON a) => M.Template -> Pipe a
 markdownPipe template = Pipe
   { pandocReader=readMarkdown def
   , transformResource=id
   , transformContent=id
   , pandocWriter=return . writeHtmlString def
   , resourceWriter=renderTemplate template
+  , computeURL=simpleURL
+  , outputDir="./dist/"
   }
+
+simpleURL :: (ToJSON a, Monad m) => a -> m String
+simpleURL (toJSON -> getFilepath -> takeBaseName -> name) = return $ name ++ ".html"
 
 site :: IO () -> IO ()
 site spec = do
@@ -53,11 +58,11 @@ runReader reader source = case reader source of
                              Left err -> throwM err
                              Right pandoc -> return pandoc
 
-loadResource :: (FromJSON a, MonadThrow m, MonadIO m) => Pipe m a -> String -> m a
+loadResource :: (FromJSON a) => Pipe a -> String -> IO a
 loadResource Pipe{..} filepath = do
-  cwd <- liftIO getCurrentDirectory
+  cwd <- getCurrentDirectory
   let relPath = makeRelative cwd filepath
-  file <- liftIO $ readFile filepath
+  file <- readFile filepath
   (meta, source) <- processSource filepath file
   pandoc <- transformContent <$> runReader pandocReader source
   content <- pandocWriter pandoc
