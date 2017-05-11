@@ -14,6 +14,7 @@ import SitePipe.Templating
 import qualified System.FilePath.Glob as G
 import Data.Aeson
 import Text.Mustache
+import System.Directory
 
 resourceGlob :: (FromJSON resource, MonadIO m, MonadThrow m) => Pipe m resource -> String -> m [resource]
 resourceGlob pipe pattern = do
@@ -27,8 +28,13 @@ loadTemplate filePath = do
     Left err -> throwM $ TemplateParseErr err
     Right template -> return template
 
-simpleResource :: (MonadIO m, MonadThrow m) => Pattern -> TemplatePath -> m [String]
-simpleResource pattern templatePath = do
+simpleResource :: (MonadIO m, MonadThrow m) => Pattern -> TemplatePath -> String -> m [Value]
+simpleResource pattern templatePath outputDir = do
   template <- loadTemplate templatePath
   resources <- resourceGlob (markdownPipe template) pattern
-  traverse (renderTemplate template) (resources :: [Value])
+  renderedContent <- traverse (renderTemplate template) resources
+  let relPaths = getRelativeFilepath <$> resources
+
+  liftIO . withCurrentDirectory outputDir $
+    traverse (uncurry writeFile) (zip relPaths renderedContent)
+  return resources

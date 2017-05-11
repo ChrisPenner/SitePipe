@@ -16,6 +16,8 @@ import Data.Aeson.Types hiding (Parser, parse)
 import Control.Lens
 import Control.Monad.IO.Class
 import qualified Data.Text as T
+import System.FilePath.Posix
+import System.Directory
 
 import Text.Pandoc hiding (Null, renderTemplate)
 
@@ -53,13 +55,16 @@ runReader reader source = case reader source of
 
 loadResource :: (FromJSON a, MonadThrow m, MonadIO m) => Pipe m a -> String -> m a
 loadResource Pipe{..} filepath = do
+  cwd <- liftIO getCurrentDirectory
+  let relPath = makeRelative cwd filepath
   file <- liftIO $ readFile filepath
   (meta, source) <- processSource filepath file
   pandoc <- transformContent <$> runReader pandocReader source
   content <- pandocWriter pandoc
-  transformResource <$> valueToResource (addMeta content meta)
+  transformResource <$> valueToResource (addMeta relPath content meta)
     where
-      addMeta content meta =
+      addMeta relPath content meta =
         meta
         & _Object . at "filepath" ?~ String (T.pack filepath)
+        & _Object . at "relativePath" ?~ String (T.pack relPath)
         & _Object . at "content" ?~ String (T.pack content)

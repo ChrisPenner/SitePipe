@@ -5,6 +5,7 @@ module SitePipe.Types
   , TemplatePath
   , Pattern
   , getFilepath
+  , getRelativeFilepath
   , getContent
   ) where
 
@@ -31,6 +32,9 @@ data Pipe m a = Pipe
 
 getFilepath :: Value -> String
 getFilepath val = T.unpack $ val ^. key "filepath" . _String
+
+getRelativeFilepath :: Value -> String
+getRelativeFilepath val = T.unpack $ val ^. key "relativePath" . _String
 
 getContent :: Value -> String
 getContent val = T.unpack $ val ^. key "content" . _String

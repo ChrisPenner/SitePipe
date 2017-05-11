@@ -4,5 +4,5 @@ import SitePipe
 
 main :: IO ()
 main = site $ do
-  results <- simpleResource "*.md" "example.html"
+  results <- simpleResource "temp/posts/**/*.md" "temp/templates/post.html" "dist"
   print results
