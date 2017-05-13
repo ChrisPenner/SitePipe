@@ -4,9 +4,12 @@ module SitePipe.Types
   , Pipe(..)
   , TemplatePath
   , Pattern
+  , Settings(..)
+  , SiteM
   , getFilepath
   , getRelativeFilepath
   , getContent
+  , basicSettings
   ) where
 
 import Control.Monad.Catch
@@ -18,18 +21,27 @@ import qualified Data.Text as T
 import Data.Aeson
 import Data.Aeson.Lens
 import Control.Lens
+import Control.Monad.Reader
 
 type TemplatePath = String
 type Pattern = String
 
+type SiteM a = ReaderT Settings IO a
+
+data Settings = Settings
+  { outputDir :: FilePath
+  }
+
+basicSettings :: Settings
+basicSettings = Settings
+  { outputDir="./dist"
+  }
+
 data Pipe a = Pipe
-  { pandocReader :: String -> Either PandocError Pandoc
+  { resourceReader :: String -> IO String
   , transformResource :: a -> a
-  , transformContent :: Pandoc -> Pandoc
-  , pandocWriter :: Pandoc -> IO String
-  , resourceWriter :: a -> IO String
+  , resourceRenderer :: a -> IO String
   , computeURL :: a -> IO String
-  , outputDir :: String
   }
 
 getFilepath :: Value -> String
@@ -46,7 +58,7 @@ data SitePipeError =
     | PParseErr P.ParseError
     | MParseErr (MP.ParseError (MP.Token String) MP.Dec)
     | PandocErr PandocError
-    | JSONErr String
+    | JSONErr String String
     | TemplateParseErr P.ParseError
     | TemplateInterpolateErr String [SubstitutionError]
 
@@ -55,9 +67,9 @@ instance Show SitePipeError where
   show (PandocErr err) = "Pandoc Error: " ++ show err
   show (PParseErr err) = "Template Error: " ++ show err
   show (MParseErr err) = "Meta-data Error: " ++ MP.parseErrorPretty err
-  show (JSONErr err) = "JSON Parse Error: " ++ err
+  show (JSONErr path err) = "JSON Parse Error in " ++ path ++ ":\n" ++ err
   show (TemplateParseErr err) = "Template Parse Error: " ++ show err
-  show (TemplateInterpolateErr path errs) = 
+  show (TemplateInterpolateErr path errs) =
     "Template Interpolation Errors in " ++ path ++  ":\n" ++ show errs
 
 instance Exception SitePipeError

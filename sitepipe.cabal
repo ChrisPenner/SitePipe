@@ -17,6 +17,7 @@ library
   hs-source-dirs:      src
   exposed-modules:     SitePipe
                      , SitePipe.Pipes
+                     , SitePipe.Pandoc
                      , SitePipe.Templating
                      , SitePipe.Files
                      , SitePipe.Parse
