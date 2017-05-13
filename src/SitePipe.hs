@@ -9,6 +9,7 @@ import SitePipe.Files as X
 import SitePipe.Pipes as X
 import SitePipe.Pandoc as X
 import SitePipe.Templating as X
+import SitePipe.Utilities as X
 import Data.Aeson.Lens as X
 import Data.Aeson as X
 

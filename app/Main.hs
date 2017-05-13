@@ -1,4 +1,5 @@
 {-# language DeriveGeneric #-}
+{-# language OverloadedStrings #-}
 module Main where
 
 import SitePipe
@@ -21,7 +22,12 @@ instance FromJSON Post
 
 main :: IO ()
 main = site basicSettings $ do
-  posts <- resourceLoader markdownReader "temp/posts/*.md"
-  templateWriter "temp/templates/post.html" postUrls (posts :: [Post])
+  posts <- resourceLoader markdownReader "posts/*.md"
+  liftIO . print $ toJSON (head posts :: Post)
+  templateWriter "templates/base.html" postUrls posts
+  copyFiles id "css/*.css"
+  css <- resourceLoader textReader "css/*.css"
+  textWriter cssUrls (css :: [Value])
     where
-      postUrls = fmap ("posts/" ++) <$> simpleURL
+      postUrls = setExt "html" . addPrefix "posts/" . simpleURL
+      cssUrls = setExt "css" . addPrefix "css/" . simpleURL

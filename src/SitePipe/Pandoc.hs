@@ -1,6 +1,7 @@
 module SitePipe.Pandoc
   ( pandocReader
   , markdownReader
+  , textReader
   ) where
 
 import Text.Pandoc
@@ -17,3 +18,6 @@ runPandocReader panReader source =
 
 markdownReader :: String -> IO String
 markdownReader = pandocReader readMarkdown
+
+textReader :: String -> IO String
+textReader = return

@@ -30,18 +30,20 @@ type SiteM a = ReaderT Settings IO a
 
 data Settings = Settings
   { outputDir :: FilePath
-  }
+  , srcDir :: FilePath
+  } deriving Show
 
 basicSettings :: Settings
 basicSettings = Settings
   { outputDir="./dist"
+  , srcDir="./site"
   }
 
 data Pipe a = Pipe
   { resourceReader :: String -> IO String
   , transformResource :: a -> a
   , resourceRenderer :: a -> IO String
-  , computeURL :: a -> IO String
+  , computeURL :: a -> String
   }
 
 getFilepath :: Value -> String
@@ -61,6 +63,7 @@ data SitePipeError =
     | JSONErr String String
     | TemplateParseErr P.ParseError
     | TemplateInterpolateErr String [SubstitutionError]
+    | SitePipeError String
 
 instance Show SitePipeError where
   show (YamlErr path err) = "YAML Parse Error in " ++ path ++ ":\n" ++ err
@@ -71,5 +74,6 @@ instance Show SitePipeError where
   show (TemplateParseErr err) = "Template Parse Error: " ++ show err
   show (TemplateInterpolateErr path errs) =
     "Template Interpolation Errors in " ++ path ++  ":\n" ++ show errs
+  show (SitePipeError err) = err
 
 instance Exception SitePipeError

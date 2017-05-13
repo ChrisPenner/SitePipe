@@ -7,6 +7,8 @@ module SitePipe.Files
   , resourceLoader
   , resourceWriter
   , templateWriter
+  , textWriter
+  , copyFiles
   ) where
 
 import Control.Monad.Catch
@@ -21,9 +23,14 @@ import System.Directory
 import System.FilePath.Posix
 import Control.Monad.Reader
 
+srcGlob :: String -> SiteM [String]
+srcGlob pattern = do
+  srcD <- asks srcDir
+  liftIO $ G.glob (srcD </> pattern)
+
 resourceLoader :: (FromJSON resource) => (String -> IO String) -> String -> SiteM [resource]
 resourceLoader rReader pattern = do
-  filenames <- liftIO $ G.glob pattern
+  filenames <- srcGlob pattern
   traverse (loadResource rReader) filenames
 
 loadTemplate :: String -> SiteM Template
@@ -33,27 +40,36 @@ loadTemplate filePath = do
     Left err -> throwM $ TemplateParseErr err
     Right template -> return template
 
-resourceWriter :: (ToJSON a) => (a -> IO String) -> (a -> IO String) -> [a] -> SiteM ()
+resourceWriter :: (ToJSON a) => (a -> IO String) -> (a -> String) -> [a] -> SiteM ()
 resourceWriter resourceRenderer makeFilepath resources = do
   outD <- asks outputDir
   liftIO $ do
-    exists <- doesDirectoryExist outD
-    when exists (removeDirectoryRecursive outD)
-    createDirectoryIfMissing False outD
     cwd <- getCurrentDirectory
     setCurrentDirectory outD
     traverse_ (writeResource resourceRenderer makeFilepath) resources
     setCurrentDirectory cwd
 
-writeResource :: (a -> IO String) -> (a -> IO String) -> a -> IO ()
+writeResource :: (a -> IO String) -> (a -> String) -> a -> IO ()
 writeResource renderer makeFilepath obj = do
   renderedContent <- renderer obj
-  url <- makeFilepath obj
+  let url = makeFilepath obj
   createDirectoryIfMissing True $ takeDirectory url
   putStrLn $ "Writing " ++ url
   writeFile url renderedContent
 
-templateWriter :: (ToJSON a) => FilePath -> (a -> IO String) -> [a] -> SiteM ()
+templateWriter :: (ToJSON a) => FilePath -> (a -> String) -> [a] -> SiteM ()
 templateWriter templatePath makeFilepath resources = do
   template <- loadTemplate templatePath
   resourceWriter (renderTemplate template) makeFilepath resources
+
+textWriter :: (ToJSON a) => (a -> String) -> [a] -> SiteM ()
+textWriter makeFilepath resources = do
+  resourceWriter (return . getContent . toJSON) makeFilepath resources
+
+copyFiles :: (String -> String) -> String -> SiteM ()
+copyFiles _ pat@('/':_) = throwM $ SitePipeError ("glob pattern " ++ pat ++ " must be a relative path")
+copyFiles transformPath pattern = do
+  Settings{..} <- ask
+  srcFilenames <- srcGlob (srcDir </> pattern)
+  let destFilenames = (outputDir </>) . transformPath . makeRelative srcDir <$> srcFilenames
+  liftIO $ traverse_ (uncurry copyFile) (zip srcFilenames destFilenames)
