@@ -3,13 +3,14 @@
 {-# language ViewPatterns #-}
 module SitePipe.Pipes
   ( site
-  )
-    where
+  ) where
 
 
 import Control.Monad.Catch as Catch
 import System.Directory
 import Control.Monad.Reader
+import Data.Foldable
+import Control.Monad.Writer
 
 import SitePipe.Types
 
@@ -17,10 +18,10 @@ site :: Settings -> SiteM () -> IO ()
 site settings' spec = do
   settings <- adjSettings settings'
   clean settings
-  result <- runReaderT (Catch.try spec) settings :: IO (Either SitePipeError ())
+  (result, warnings) <- runWriterT (runReaderT (Catch.try spec) settings)
   case result of
-    Left err -> print err
-    Right _ -> return ()
+    Left err -> print (err :: SitePipeError)
+    Right _ -> unless (null $ warnings) (traverse_ putStrLn warnings)
 
 adjSettings :: Settings -> IO Settings
 adjSettings Settings{..} = do

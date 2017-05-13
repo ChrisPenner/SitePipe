@@ -1,4 +1,5 @@
 {-# language OverloadedStrings #-}
+{-# language FlexibleContexts #-}
 {-# language ViewPatterns #-}
 module SitePipe.Templating
   ( renderTemplate
@@ -6,20 +7,16 @@ module SitePipe.Templating
 
 import qualified Text.Mustache as M
 import qualified Data.Text as T
-import Control.Monad.Catch
 import Data.Aeson.Types
 import SitePipe.Types
-import Control.Monad.IO.Class
-import System.IO
+import Control.Monad.Writer
 
-renderTemplate :: (ToJSON env, MonadThrow m, MonadIO m) => M.Template -> env -> m String
+renderTemplate :: (ToJSON env) => M.Template -> env -> SiteM String
 renderTemplate template (toJSON -> env) =
   case M.checkedSubstitute template env of
     ([], result) -> return (T.unpack result)
-    (errs, r) -> liftIO $ do
-      hPutStrLn stderr $ "*** Warnings rendering " ++ path ++ "***"
-      _ <- traverse (hPrint stderr) errs
-      hPutStrLn stderr "------"
+    (errs, r) -> do
+      tell $ ["*** Warnings rendering " ++ path ++ "***"] ++ (fmap show errs) ++ ["------"]
       return (T.unpack r)
   where
     path = getFilepath env

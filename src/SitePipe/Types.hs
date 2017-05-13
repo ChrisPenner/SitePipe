@@ -22,11 +22,12 @@ import Data.Aeson
 import Data.Aeson.Lens
 import Control.Lens
 import Control.Monad.Reader
+import Control.Monad.Writer
 
 type TemplatePath = String
 type Pattern = String
 
-type SiteM a = ReaderT Settings IO a
+type SiteM a = ReaderT Settings (WriterT [String] IO) a
 
 data Settings = Settings
   { outputDir :: FilePath

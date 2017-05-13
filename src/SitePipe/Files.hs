@@ -50,20 +50,20 @@ loadTemplate filePath = do
     Left err -> throwM $ TemplateParseErr err
     Right template -> return template
 
-resourceWriter :: (ToJSON a) => (a -> IO String) -> [a] -> SiteM ()
+resourceWriter :: (ToJSON a) => (a -> SiteM String) -> [a] -> SiteM ()
 resourceWriter resourceRenderer resources =
   traverse_ (writeResource resourceRenderer) resources
 
-writeResource :: (ToJSON a) => (a -> IO String) -> a -> SiteM ()
+writeResource :: (ToJSON a) => (a -> SiteM String) -> a -> SiteM ()
 writeResource renderer obj = do
   outD <- asks outputDir
-  renderedContent <- liftIO $ renderer obj
+  renderedContent <- renderer obj
   let outFile = outD </> getURL (toJSON obj)
   liftIO . createDirectoryIfMissing True $ takeDirectory outFile
   liftIO . putStrLn $ "Writing " ++ outFile
   liftIO $ writeFile outFile renderedContent
 
-writeResources :: (ToJSON a) => (a -> IO String) -> [a] -> SiteM ()
+writeResources :: (ToJSON a) => (a -> SiteM String) -> [a] -> SiteM ()
 writeResources = traverse_ . writeResource
 
 templateWriter :: (ToJSON a) => FilePath -> [a] -> SiteM ()

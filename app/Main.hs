@@ -62,8 +62,13 @@ getTags :: [Post] -> [String]
 getTags = nub . concat . mapMaybe (tags :: Post -> Maybe [String])
 
 byTags :: [Post] -> [Tag]
-byTags postList = (\(t, ps) -> Tag t ("/tag/" ++ t ++ ".html") ps) <$> M.toList tagMap
+byTags postList = makeTag <$> M.toList tagMap
   where
     tagMap = M.unionsWith mappend (fmap toMap postList)
     toMap post@Post{tags=Just ts} = M.fromList (zip ts $ repeat [post])
     toMap _ = M.empty
+    makeTag (tagname, psts) = 
+      Tag { tag=tagname
+          , url="/tag/" ++ tagname ++ ".html"
+          , posts=psts
+          }
