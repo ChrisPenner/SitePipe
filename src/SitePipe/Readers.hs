@@ -1,5 +1,5 @@
-module SitePipe.Pandoc
-  ( pandocReader
+module SitePipe.Readers
+  ( mkPandocReader
   , markdownReader
   , textReader
   ) where
@@ -7,8 +7,8 @@ module SitePipe.Pandoc
 import Text.Pandoc
 import Control.Monad.Catch
 
-pandocReader :: (ReaderOptions -> String -> (Either PandocError Pandoc)) -> String -> IO String
-pandocReader pReader content = writeHtmlString def <$> runPandocReader (pReader def) content
+mkPandocReader :: (ReaderOptions -> String -> (Either PandocError Pandoc)) -> String -> IO String
+mkPandocReader pReader content = writeHtmlString def <$> runPandocReader (pReader def) content
 
 runPandocReader :: (MonadThrow m) => (String -> Either PandocError Pandoc) -> String -> m Pandoc
 runPandocReader panReader source =
@@ -17,7 +17,7 @@ runPandocReader panReader source =
     Right pandoc -> return pandoc
 
 markdownReader :: String -> IO String
-markdownReader = pandocReader readMarkdown
+markdownReader = mkPandocReader readMarkdown
 
 textReader :: String -> IO String
 textReader = return
