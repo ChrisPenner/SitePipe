@@ -7,8 +7,8 @@ module SitePipe.Types
   , Settings(..)
   , SiteM
   , getFilepath
-  , getRelativeFilepath
   , getContent
+  , getURL
   , basicSettings
   ) where
 
@@ -46,14 +46,17 @@ data Pipe a = Pipe
   , computeURL :: a -> String
   }
 
-getFilepath :: Value -> String
-getFilepath val = T.unpack $ val ^. key "filepath" . _String
+mkGetter :: String -> (Value -> String)
+mkGetter k val = T.unpack $ val ^. key (T.pack k) . _String
 
-getRelativeFilepath :: Value -> String
-getRelativeFilepath val = T.unpack $ val ^. key "relativePath" . _String
+getFilepath :: Value -> String
+getFilepath = mkGetter "filepath"
 
 getContent :: Value -> String
-getContent val = T.unpack $ val ^. key "content" . _String
+getContent = mkGetter "content"
+
+getURL :: Value -> String
+getURL = dropWhile (== '/') . mkGetter "url"
 
 data SitePipeError =
   YamlErr String String

@@ -35,7 +35,7 @@ site :: Settings -> SiteM () -> IO ()
 site settings' spec = do
   settings <- adjSettings settings'
   clean settings
-  result <- (runReaderT (Catch.try spec) settings :: IO (Either SitePipeError ()))
+  result <- runReaderT (Catch.try spec) settings :: IO (Either SitePipeError ())
   case result of
     Left err -> print err
     Right _ -> return ()
@@ -44,7 +44,7 @@ adjSettings :: Settings -> IO Settings
 adjSettings Settings{..} = do
   outD <- makeAbsolute outputDir
   srcD <- makeAbsolute srcDir
-  return $ Settings{outputDir=outD, srcDir=srcD, ..}
+  return Settings{outputDir=outD, srcDir=srcD, ..}
 
 clean :: Settings -> IO ()
 clean (outputDir -> outD) = do
@@ -60,9 +60,9 @@ valueToResource obj =
   where 
     name = getFilepath obj
 
-loadResource :: (FromJSON a) => (String -> IO String) -> String -> SiteM a
-loadResource rReader filepath = do
-  cwd <- liftIO $ getCurrentDirectory
+loadResource :: (FromJSON a) => (String -> IO String) -> (Value -> String) -> String -> SiteM a
+loadResource rReader makeUrl filepath = do
+  cwd <- liftIO getCurrentDirectory
   let relPath = makeRelative cwd filepath
   file <- liftIO $ readFile filepath
   (meta, source) <- processSource filepath file
@@ -74,3 +74,4 @@ loadResource rReader filepath = do
         & _Object . at "filepath" ?~ String (T.pack filepath)
         & _Object . at "relativePath" ?~ String (T.pack relPath)
         & _Object . at "content" ?~ String (T.pack content)
+        & (\obj -> obj & _Object . at "url" ?~ String (T.pack . ("/" </>) . makeUrl $ obj))

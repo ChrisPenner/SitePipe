@@ -1,12 +1,15 @@
 {-# language DeriveGeneric #-}
 {-# language OverloadedStrings #-}
+{-# language DuplicateRecordFields #-}
 module Main where
 
 import SitePipe
 import GHC.Generics
 
 data Post = Post
-  { tags :: [String]
+  { url :: String
+  , tags :: Maybe [String]
+  , categories :: Maybe [String]
   , author :: String
   , date :: String
   , title :: String
@@ -17,17 +20,27 @@ data Post = Post
   , image :: Maybe String
   } deriving (Show, Generic)
 
+data Index = Index
+  { posts :: [Post]
+  , url :: String
+  } deriving (Show, Generic)
+
 instance ToJSON Post
 instance FromJSON Post
 
+instance ToJSON Index
+instance FromJSON Index
+
 main :: IO ()
 main = site basicSettings $ do
-  posts <- resourceLoader markdownReader "posts/*.md"
-  liftIO . print $ toJSON (head posts :: Post)
-  templateWriter "templates/base.html" postUrls posts
-  copyFiles id "css/*.css"
-  css <- resourceLoader textReader "css/*.css"
-  textWriter cssUrls (css :: [Value])
+  posts' <- resourceLoader' markdownReader mkPostUrl "posts/*.md"
+  templateWriter "templates/index.html" [Index posts' "/index.html"]
+  templateWriter "templates/base.html" posts'
+  staticAssets
     where
-      postUrls = setExt "html" . addPrefix "posts/" . simpleURL
-      cssUrls = setExt "css" . addPrefix "css/" . simpleURL
+      mkPostUrl = setExt "html" . addPrefix "posts/" . simpleURL
+
+staticAssets :: SiteM ()
+staticAssets = do
+  copyFiles id "css/*.css"
+  copyFiles id "images/*"
