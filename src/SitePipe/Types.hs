@@ -1,4 +1,5 @@
 {-# language OverloadedStrings #-}
+{-# language ViewPatterns #-}
 module SitePipe.Types
   ( SitePipeError(..)
   , Pipe(..)
@@ -6,9 +7,8 @@ module SitePipe.Types
   , Pattern
   , Settings(..)
   , SiteM
-  , getFilepath
-  , getContent
   , getURL
+  , getValue
   , basicSettings
   ) where
 
@@ -47,17 +47,15 @@ data Pipe a = Pipe
   , computeURL :: a -> String
   }
 
-mkGetter :: String -> (Value -> String)
-mkGetter k val = T.unpack $ val ^. key (T.pack k) . _String
+getValue :: (ToJSON obj, FromJSON val) => String -> obj -> Maybe val
+getValue (T.pack -> k) (toJSON -> obj) = do
+  val <- obj ^? key k
+  case fromJSON val of
+    Success v -> Just v
+    _ -> Nothing
 
-getFilepath :: Value -> String
-getFilepath = mkGetter "filepath"
-
-getContent :: Value -> String
-getContent = mkGetter "content"
-
-getURL :: Value -> String
-getURL = dropWhile (== '/') . mkGetter "url"
+getURL :: (ToJSON a) => a -> Maybe String
+getURL = fmap (dropWhile (== '/')) . getValue "url"
 
 data SitePipeError =
   YamlErr String String

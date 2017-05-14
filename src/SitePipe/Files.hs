@@ -27,6 +27,7 @@ import System.FilePath.Posix
 import Control.Monad.Reader
 import qualified Data.Text as T
 import SitePipe.Parse
+import Data.Maybe
 
 srcGlob :: String -> SiteM [String]
 srcGlob pattern@('/':_) = throwM $ SitePipeError ("glob pattern " ++ pattern ++ " must be a relative path")
@@ -58,7 +59,7 @@ writeResource :: (ToJSON a) => (a -> SiteM String) -> a -> SiteM ()
 writeResource renderer obj = do
   outD <- asks outputDir
   renderedContent <- renderer obj
-  let outFile = outD </> getURL (toJSON obj)
+  let outFile = outD </> fromMaybe "" (getURL obj)
   liftIO . createDirectoryIfMissing True $ takeDirectory outFile
   liftIO . putStrLn $ "Writing " ++ outFile
   liftIO $ writeFile outFile renderedContent
@@ -73,7 +74,7 @@ templateWriter templatePath resources = do
 
 textWriter :: (ToJSON a) => [a] -> SiteM ()
 textWriter resources =
-  writeResources (return . getContent . toJSON) resources
+  writeResources (return . fromMaybe "" . getValue "content") resources
 
 copyFiles :: (String -> String) -> String -> SiteM ()
 copyFiles transformPath pattern = do
@@ -109,4 +110,4 @@ valueToResource obj =
     Left err -> throwM (JSONErr name err)
     Right result -> return result
   where
-    name = getFilepath obj
+    name = fromMaybe "unknown" $ getValue "filepath" obj
