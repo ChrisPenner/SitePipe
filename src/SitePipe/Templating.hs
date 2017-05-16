@@ -7,10 +7,12 @@ module SitePipe.Templating
 
 import qualified Text.Mustache as M
 import qualified Data.Text as T
+import Data.Text.Lens
+import Control.Lens
+import Data.Aeson.Lens
 import Data.Aeson.Types
 import SitePipe.Types
 import Control.Monad.Writer
-import Data.Maybe
 
 renderTemplate :: (ToJSON env) => M.Template -> env -> SiteM String
 renderTemplate template (toJSON -> env) =
@@ -20,4 +22,4 @@ renderTemplate template (toJSON -> env) =
       tell $ ["*** Warnings rendering " ++ path ++ "***"] ++ (fmap show errs) ++ ["------"]
       return (T.unpack r)
   where
-    path = fromMaybe "" $ getValue "filepath" env
+    path = env ^. key "filepath" . _String . unpacked

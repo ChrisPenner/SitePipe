@@ -7,11 +7,12 @@ module SitePipe.Utilities
 
 import System.FilePath.Posix as X
 import Data.Aeson.Types
-import SitePipe.Types
-import Data.Maybe
+import Data.Aeson.Lens
+import Control.Lens
+import Data.Text.Lens
 
 simpleURL :: (ToJSON a) => a -> String
-simpleURL = fromMaybe "" . fmap takeBaseName . getValue "filepath"
+simpleURL = takeBaseName . view (key "filepath" . _String . unpacked) . toJSON
 
 setExt :: String -> String -> String
 setExt = flip replaceExtension

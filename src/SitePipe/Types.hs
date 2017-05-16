@@ -2,13 +2,10 @@
 {-# language ViewPatterns #-}
 module SitePipe.Types
   ( SitePipeError(..)
-  , Pipe(..)
   , TemplatePath
   , Pattern
   , Settings(..)
   , SiteM
-  , getURL
-  , getValue
   ) where
 
 import Control.Monad.Catch
@@ -16,10 +13,6 @@ import Text.Pandoc
 import qualified Text.Megaparsec as MP
 import qualified Text.Parsec as P
 import Text.Mustache.Render (SubstitutionError)
-import qualified Data.Text as T
-import Data.Aeson
-import Data.Aeson.Lens
-import Control.Lens
 import Control.Monad.Reader
 import Control.Monad.Writer
 
@@ -32,23 +25,6 @@ data Settings = Settings
   { srcDir :: FilePath
   , outputDir :: FilePath
   } deriving Show
-
-data Pipe a = Pipe
-  { resourceReader :: String -> IO String
-  , transformResource :: a -> a
-  , resourceRenderer :: a -> IO String
-  , computeURL :: a -> String
-  }
-
-getValue :: (ToJSON obj, FromJSON val) => String -> obj -> Maybe val
-getValue (T.pack -> k) (toJSON -> obj) = do
-  val <- obj ^? key k
-  case fromJSON val of
-    Success v -> Just v
-    _ -> Nothing
-
-getURL :: (ToJSON a) => a -> Maybe String
-getURL = fmap (dropWhile (== '/')) . getValue "url"
 
 data SitePipeError =
   YamlErr String String

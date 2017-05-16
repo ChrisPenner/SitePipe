@@ -26,8 +26,8 @@ import System.Directory
 import System.FilePath.Posix
 import Control.Monad.Reader
 import qualified Data.Text as T
+import Data.Text.Lens
 import SitePipe.Parse
-import Data.Maybe
 
 srcGlob :: String -> SiteM [String]
 srcGlob pattern@('/':_) = throwM $ SitePipeError ("glob pattern " ++ pattern ++ " must be a relative path")
@@ -59,7 +59,7 @@ writeResource :: (ToJSON a) => (a -> SiteM String) -> a -> SiteM ()
 writeResource renderer obj = do
   outD <- asks outputDir
   renderedContent <- renderer obj
-  let outFile = outD </> fromMaybe "" (getURL obj)
+  let outFile = outD </> (toJSON obj ^. key "url" . _String . unpacked)
   liftIO . createDirectoryIfMissing True $ takeDirectory outFile
   liftIO . putStrLn $ "Writing " ++ outFile
   liftIO $ writeFile outFile renderedContent
@@ -74,7 +74,7 @@ templateWriter templatePath resources = do
 
 textWriter :: (ToJSON a) => [a] -> SiteM ()
 textWriter resources =
-  writeResources (return . fromMaybe "" . getValue "content") resources
+  writeResources (return . view (key "content" . _String . unpacked) . toJSON) resources
 
 copyFiles :: (String -> String) -> String -> SiteM ()
 copyFiles transformPath pattern = do
@@ -89,12 +89,12 @@ copyFiles transformPath pattern = do
         copyFile src dest
 
 loadResource :: (FromJSON a) => (String -> IO String) -> (Value -> String) -> String -> SiteM a
-loadResource rReader makeUrl filepath = do
+loadResource fileReader makeUrl filepath = do
   cwd <- liftIO getCurrentDirectory
   let relPath = makeRelative cwd filepath
   file <- liftIO $ readFile filepath
   (meta, source) <- processSource filepath file
-  content <- liftIO $ rReader source
+  content <- liftIO $ fileReader source
   valueToResource (addMeta relPath content meta)
     where
       addMeta relPath content meta =
@@ -110,4 +110,4 @@ valueToResource obj =
     Left err -> throwM (JSONErr name err)
     Right result -> return result
   where
-    name = fromMaybe "unknown" $ getValue "filepath" obj
+    name = obj ^. key "filepath" . _String . unpacked

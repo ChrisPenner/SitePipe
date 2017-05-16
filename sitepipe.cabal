@@ -35,7 +35,7 @@ library
                      , pandoc
                      , pandoc-lens
                      , yaml
-                     , mustache
+                     , mustache >= 2.1.4
                      , bytestring
                      , text
                      , parsec
