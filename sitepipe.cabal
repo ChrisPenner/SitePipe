@@ -22,7 +22,9 @@ library
                      , SitePipe.Files
                      , SitePipe.Parse
                      , SitePipe.Types
+                     , SitePipe.Utilities
   build-depends:       base >= 4.7 && < 5
+                     , optparse-applicative
                      , unordered-containers
                      , containers
                      , directory

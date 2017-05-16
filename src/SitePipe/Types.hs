@@ -9,7 +9,6 @@ module SitePipe.Types
   , SiteM
   , getURL
   , getValue
-  , basicSettings
   ) where
 
 import Control.Monad.Catch
@@ -30,15 +29,9 @@ type Pattern = String
 type SiteM a = ReaderT Settings (WriterT [String] IO) a
 
 data Settings = Settings
-  { outputDir :: FilePath
-  , srcDir :: FilePath
+  { srcDir :: FilePath
+  , outputDir :: FilePath
   } deriving Show
-
-basicSettings :: Settings
-basicSettings = Settings
-  { outputDir="./dist"
-  , srcDir="./site"
-  }
 
 data Pipe a = Pipe
   { resourceReader :: String -> IO String

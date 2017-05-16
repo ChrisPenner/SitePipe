@@ -43,7 +43,7 @@ instance ToJSON Tag
 instance FromJSON Tag
 
 main :: IO ()
-main = site basicSettings $ do
+main = site $ do
   posts' <- resourceLoader' markdownReader mkPostUrl "posts/*.md"
   let allTags = byTags posts'
   templateWriter "templates/index.html" [Index posts' allTags "/index.html"]
