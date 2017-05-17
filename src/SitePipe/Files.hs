@@ -28,6 +28,7 @@ import Control.Monad.Reader
 import qualified Data.Text as T
 import Data.Text.Lens
 import SitePipe.Parse
+import SitePipe.Utilities
 
 srcGlob :: String -> SiteM [String]
 srcGlob pattern@('/':_) = throwM $ SitePipeError ("glob pattern " ++ pattern ++ " must be a relative path")
@@ -35,12 +36,12 @@ srcGlob pattern = do
   srcD <- asks srcDir
   liftIO $ G.glob (srcD </> pattern)
 
-resourceLoader' :: (FromJSON resource) => (String -> IO String) -> (Value -> String) -> String -> SiteM [resource]
-resourceLoader' fileReader makeUrl pattern = do
+resourceLoader' :: (FromJSON resource) => (String -> IO String) -> String -> SiteM [resource]
+resourceLoader' fileReader pattern = do
   filenames <- srcGlob pattern
-  traverse (loadResource fileReader makeUrl) filenames
+  traverse (loadResource fileReader) filenames
 
-resourceLoader :: (String -> IO String) -> (Value -> String) -> String -> SiteM [Value]
+resourceLoader :: (String -> IO String) -> String -> SiteM [Value]
 resourceLoader = resourceLoader'
 
 loadTemplate :: String -> SiteM Template
@@ -55,22 +56,23 @@ resourceWriter :: (ToJSON a) => (a -> SiteM String) -> [a] -> SiteM ()
 resourceWriter resourceRenderer resources =
   traverse_ (writeResource resourceRenderer) resources
 
-writeResource :: (ToJSON a) => (a -> SiteM String) -> a -> SiteM ()
-writeResource renderer obj = do
-  outD <- asks outputDir
-  renderedContent <- renderer obj
-  let outFile = outD </> (toJSON obj ^. key "url" . _String . unpacked)
-  liftIO . createDirectoryIfMissing True $ takeDirectory outFile
-  liftIO . putStrLn $ "Writing " ++ outFile
-  liftIO $ writeFile outFile renderedContent
-
-writeResources :: (ToJSON a) => (a -> SiteM String) -> [a] -> SiteM ()
-writeResources = traverse_ . writeResource
-
 templateWriter :: (ToJSON a) => FilePath -> [a] -> SiteM ()
 templateWriter templatePath resources = do
   template <- loadTemplate templatePath
   writeResources (renderTemplate template) resources
+
+writeResources :: (ToJSON a) => (a -> SiteM String) -> [a] -> SiteM ()
+writeResources = traverse_ . writeResource
+
+writeResource :: (ToJSON a) => (a -> SiteM String) -> a -> SiteM ()
+writeResource renderer obj = do
+  outD <- asks outputDir
+  renderedContent <- renderer obj
+  let outFile = outD </> (toJSON obj ^. key "url" . _String . unpacked . to (dropWhile (== '/')))
+  liftIO . createDirectoryIfMissing True $ takeDirectory outFile
+  liftIO . putStrLn $ "Writing " ++ outFile
+  liftIO $ writeFile outFile renderedContent
+
 
 textWriter :: (ToJSON a) => [a] -> SiteM ()
 textWriter resources =
@@ -88,10 +90,10 @@ copyFiles transformPath pattern = do
         putStrLn $ "Copying " ++ src ++ " to " ++ dest
         copyFile src dest
 
-loadResource :: (FromJSON a) => (String -> IO String) -> (Value -> String) -> String -> SiteM a
-loadResource fileReader makeUrl filepath = do
-  cwd <- liftIO getCurrentDirectory
-  let relPath = makeRelative cwd filepath
+loadResource :: (FromJSON a) => (String -> IO String) -> String -> SiteM a
+loadResource fileReader filepath = do
+  Settings{srcDir} <- ask
+  let relPath = makeRelative srcDir filepath
   file <- liftIO $ readFile filepath
   (meta, source) <- processSource filepath file
   content <- liftIO $ fileReader source
@@ -99,10 +101,9 @@ loadResource fileReader makeUrl filepath = do
     where
       addMeta relPath content meta =
         meta
-        & _Object . at "filepath" ?~ String (T.pack filepath)
-        & _Object . at "relativePath" ?~ String (T.pack relPath)
+        & _Object . at "filepath" ?~ String (T.pack relPath)
         & _Object . at "content" ?~ String (T.pack content)
-        & (\obj -> obj & _Object . at "url" ?~ String (T.pack . ("/" </>) . makeUrl $ obj))
+        & _Object . at "url" ?~ (String . T.pack . setExt "html" $ ("/" </> relPath))
 
 valueToResource :: (MonadThrow m, FromJSON a) => Value -> m a
 valueToResource obj =

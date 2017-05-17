@@ -1,18 +1,18 @@
+{-# language OverloadedStrings #-}
 module SitePipe.Utilities
-  ( module X
-  , simpleURL
+  ( simpleURL
   , addPrefix
   , setExt
   ) where
 
-import System.FilePath.Posix as X
+import System.FilePath.Posix
 import Data.Aeson.Types
 import Data.Aeson.Lens
 import Control.Lens
 import Data.Text.Lens
 
-simpleURL :: (ToJSON a) => a -> String
-simpleURL = takeBaseName . view (key "filepath" . _String . unpacked) . toJSON
+simpleURL :: Value -> String
+simpleURL = view (key "url" . _String . unpacked)
 
 setExt :: String -> String -> String
 setExt = flip replaceExtension

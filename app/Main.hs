@@ -1,5 +1,4 @@
 {-# language OverloadedStrings #-}
-{-# language DeriveGeneric #-}
 {-# language DuplicateRecordFields #-}
 module Main where
 
@@ -8,24 +7,26 @@ import qualified Data.Map as M
 import Data.Text.Lens
 import qualified Data.Text as T
 
-indexURL :: String
-indexURL = "/index.html"
-
 main :: IO ()
 main = site $ do
-  posts <- fmap processPostTags <$> resourceLoader markdownReader mkPostUrl "posts/*.md"
-  let allTags = byTags posts
-
-  templateWriter "templates/index.html" [object ["posts" .= posts, ("tags" .= allTags), ("url" .= indexURL)]]
+  posts <- fmap processPostTags <$> resourceLoader markdownReader "posts/*.md"
+  let tags = byTags posts
+  templateWriter "templates/index.html" [mkIndexEnv posts tags]
   templateWriter "templates/base.html" posts
-  templateWriter "templates/tag.html" allTags
+  templateWriter "templates/tag.html" tags
   staticAssets
-    where
-      mkPostUrl = setExt "html" . addPrefix "posts/" . simpleURL
+
+mkIndexEnv :: [Value] -> [Value] -> Value
+mkIndexEnv posts tags =
+  object [ "posts" .= posts
+         , "tags" .= tags
+         , "url" .= ("/index.html" :: String)
+         ]
 
 staticAssets :: SiteM ()
 staticAssets = do
   copyFiles id "css/*.css"
+  copyFiles id "js/*.js"
   copyFiles id "images/*"
 
 processPostTags :: Value -> Value

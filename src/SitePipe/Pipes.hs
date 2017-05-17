@@ -22,7 +22,7 @@ site spec = do
   (result, warnings) <- runWriterT (runReaderT (Catch.try spec) settings)
   case result of
     Left err -> print (err :: SitePipeError)
-    Right _ -> unless (null $ warnings) (traverse_ putStrLn warnings)
+    Right _ -> unless (null warnings) (traverse_ putStrLn warnings)
 
 settingsInfo :: ParserInfo Settings
 settingsInfo = info (settingsP <**> helper)
@@ -55,6 +55,7 @@ adjSettings Settings{..} = do
 
 clean :: Settings -> IO ()
 clean (outputDir -> outD) = do
+  putStrLn $ "Purging " ++ outD
   exists <- doesDirectoryExist outD
   when exists (removeDirectoryRecursive outD)
   createDirectoryIfMissing False outD
