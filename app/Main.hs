@@ -13,13 +13,21 @@ main = site $ do
   let tags = byTags posts
   templateWriter "templates/index.html" [mkIndexEnv posts tags]
   templateWriter "templates/base.html" posts
-  templateWriter "templates/tag.html" tags
+  templateWriter "templates/tag.html" (stripPostsHTMLSuffix <$> tags)
   staticAssets
+
+stripHTMLSuffix :: Value -> Value
+stripHTMLSuffix obj = obj
+  & key "url" . _String . unpacked %~ setExt ""
+
+stripPostsHTMLSuffix :: Value -> Value
+stripPostsHTMLSuffix tag = tag
+  & key "posts" . _Array . traversed . key "url" . _String . unpacked %~ setExt ""
 
 mkIndexEnv :: [Value] -> [Value] -> Value
 mkIndexEnv posts tags =
-  object [ "posts" .= posts
-         , "tags" .= tags
+  object [ "posts" .= (stripHTMLSuffix <$> posts)
+         , "tags" .= (stripHTMLSuffix <$> tags)
          , "url" .= ("/index.html" :: String)
          ]
 
