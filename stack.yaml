@@ -40,8 +40,9 @@ packages:
 # Dependency packages to be pulled from upstream that are not in the resolver
 # (e.g., acme-missiles-0.3)
 extra-deps:
-- pandoc-lens-0.6.2
 - mustache-2.1.4
+- fsutils-0.1.2
+- filesystem-trees-0.1.0.6
 
 # Override default flag values for local packages and extra-deps
 flags: {}

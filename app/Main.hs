@@ -9,7 +9,7 @@ import qualified Data.Text as T
 
 main :: IO ()
 main = site $ do
-  posts <- fmap processPostTags <$> resourceLoader markdownReader "posts/*.md"
+  posts <- fmap processPostTags <$> resourceLoader markdownReader ["posts/*.md"]
   let tags = byTags posts
   templateWriter "templates/index.html" [mkIndexEnv posts tags]
   templateWriter "templates/base.html" posts
@@ -32,10 +32,11 @@ mkIndexEnv posts tags =
          ]
 
 staticAssets :: SiteM ()
-staticAssets = do
-  copyFiles id "css/*.css"
-  copyFiles id "js/*.js"
-  copyFiles id "images/*"
+staticAssets = copyFiles
+    [ "css/*.css"
+    , "js/"
+    , "images/"
+    ]
 
 processPostTags :: Value -> Value
 processPostTags post = post & key "tags" . _Array . traverse %~ mkSimpleTag

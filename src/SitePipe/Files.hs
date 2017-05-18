@@ -1,3 +1,4 @@
+{-# language ViewPatterns #-}
 {-# language RankNTypes #-}
 {-# language RecordWildCards #-}
 {-# language NamedFieldPuns #-}
@@ -10,8 +11,12 @@ module SitePipe.Files
   , templateWriter
   , textWriter
   , copyFiles
+  , copyFilesWith
+  , copyDirs
+  , copyDirsWith
   ) where
 
+import Data.String
 import Control.Monad.Catch
 import Data.Foldable
 import SitePipe.Templating
@@ -29,6 +34,9 @@ import qualified Data.Text as T
 import Data.Text.Lens
 import SitePipe.Parse
 import SitePipe.Utilities
+import Shelly hiding ((</>), FilePath, relPath)
+import Data.String.Utils
+import Data.Bool
 
 srcGlob :: String -> SiteM [String]
 srcGlob pattern@('/':_) = throwM $ SitePipeError ("glob pattern " ++ pattern ++ " must be a relative path")
@@ -36,12 +44,12 @@ srcGlob pattern = do
   srcD <- asks srcDir
   liftIO $ G.glob (srcD </> pattern)
 
-resourceLoader' :: (FromJSON resource) => (String -> IO String) -> String -> SiteM [resource]
-resourceLoader' fileReader pattern = do
-  filenames <- srcGlob pattern
+resourceLoader' :: (FromJSON resource) => (String -> IO String) -> [String] -> SiteM [resource]
+resourceLoader' fileReader patterns = do
+  filenames <- concat <$> traverse srcGlob patterns
   traverse (loadResource fileReader) filenames
 
-resourceLoader :: (String -> IO String) -> String -> SiteM [Value]
+resourceLoader :: (String -> IO String) -> [String] -> SiteM [Value]
 resourceLoader = resourceLoader'
 
 loadTemplate :: String -> SiteM Template
@@ -78,17 +86,28 @@ textWriter :: (ToJSON a) => [a] -> SiteM ()
 textWriter resources =
   writeResources (return . view (key "content" . _String . unpacked) . toJSON) resources
 
-copyFiles :: (String -> String) -> String -> SiteM ()
-copyFiles transformPath pattern = do
+copyFilesWith :: (String -> String) -> [String] -> SiteM ()
+copyFilesWith transformPath patterns = do
   Settings{..} <- ask
-  srcFilenames <- srcGlob pattern
+  srcFilenames <- concat <$> traverse srcGlob patterns
   let destFilenames = (outputDir </>) . transformPath . makeRelative srcDir <$> srcFilenames
-  liftIO $ traverse_ (createDirectoryIfMissing True . takeDirectory) destFilenames
-  liftIO $ traverse_ copy (zip srcFilenames destFilenames)
+  shelly $ do
+    let getDir pth = bool (takeDirectory) (takeDirectory . takeDirectory) (endswith "/" pth) $ pth
+    traverse_ (mkdir_p . fromString . getDir) destFilenames
+    traverse_ copy (zip srcFilenames destFilenames)
     where
       copy (src, dest) = do
-        putStrLn $ "Copying " ++ src ++ " to " ++ dest
-        copyFile src dest
+        echo $ T.concat ["Copying ",  T.pack src, " to ", T.pack dest]
+        cp_r (fromString src) (fromString dest)
+
+copyFiles :: [String] -> SiteM ()
+copyFiles = copyFilesWith id
+
+copyDirsWith :: (String -> String) -> [String] -> SiteM ()
+copyDirsWith = copyFilesWith
+
+copyDirs :: [String] -> SiteM ()
+copyDirs = copyDirsWith id
 
 loadResource :: (FromJSON a) => (String -> IO String) -> String -> SiteM a
 loadResource fileReader filepath = do
