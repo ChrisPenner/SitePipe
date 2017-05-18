@@ -12,8 +12,6 @@ module SitePipe.Files
   , textWriter
   , copyFiles
   , copyFilesWith
-  , copyDirs
-  , copyDirsWith
   ) where
 
 import Data.String
@@ -102,12 +100,6 @@ copyFilesWith transformPath patterns = do
 
 copyFiles :: [String] -> SiteM ()
 copyFiles = copyFilesWith id
-
-copyDirsWith :: (String -> String) -> [String] -> SiteM ()
-copyDirsWith = copyFilesWith
-
-copyDirs :: [String] -> SiteM ()
-copyDirs = copyDirsWith id
 
 loadResource :: (FromJSON a) => (String -> IO String) -> String -> SiteM a
 loadResource fileReader filepath = do

@@ -12,7 +12,7 @@ main = site $ do
   posts <- fmap processPostTags <$> resourceLoader markdownReader ["posts/*.md"]
   let tags = byTags posts
   templateWriter "templates/index.html" [mkIndexEnv posts tags]
-  templateWriter "templates/base.html" posts
+  templateWriter "templates/base.html" (over (key "tags" . _Array . traverse) stripHTMLSuffix <$> posts)
   templateWriter "templates/tag.html" (stripPostsHTMLSuffix <$> tags)
   staticAssets
 
