@@ -46,14 +46,14 @@ import Data.Bool
 --
 -- * "posts/*.md": matches any markdown files in the posts directory of your source folder.
 -- * "**/*.txt": matches all text files recursively in your source folder.
-srcGlob :: String -> SiteM [String]
+srcGlob :: GlobPattern -> SiteM [FilePath]
 srcGlob pattern@('/':_) = throwM $ SitePipeError ("glob pattern " ++ pattern ++ " must be a relative path")
 srcGlob pattern = do
   srcD <- asks srcDir
   liftIO $ G.glob (srcD </> pattern)
 
 -- | Loads a Mustache template given a relative filepath.
-loadTemplate :: String -> SiteM Template
+loadTemplate :: FilePath -> SiteM Template
 loadTemplate filePath = do
   srcD <- asks srcDir
   mTemplate <- liftIO $ automaticCompile [srcD] filePath
@@ -92,13 +92,13 @@ textWriter resources =
 -- | Given a list of file or directory globs (see 'srcGlob')
 -- we copy matching files and directories as-is from the source directory
 -- to the output directory maintaining their relative filepath.
-copyFiles :: [String] -> SiteM ()
+copyFiles :: [GlobPattern] -> SiteM ()
 copyFiles = copyFilesWith id
 
 -- | Runs 'copyFiles' but using a filepath transforming function to determine
 -- the output filepath. The filepath transformation accepts and should return
 -- a relative path.
-copyFilesWith :: (FilePath -> FilePath) -> [String] -> SiteM ()
+copyFilesWith :: (FilePath -> FilePath) -> [GlobPattern] -> SiteM ()
 copyFilesWith transformPath patterns = do
   Settings{..} <- ask
   srcFilenames <- concat <$> traverse srcGlob patterns
@@ -116,18 +116,18 @@ copyFilesWith transformPath patterns = do
 -- this function finds all files matching any of the provided list
 -- of fileglobs (according to 'srcGlob') and returns a list of loaded resources
 -- as Aeson 'Value's.
-resourceLoader :: (String -> IO String) -> [String] -> SiteM [Value]
+resourceLoader :: (String -> IO String) -> [GlobPattern] -> SiteM [Value]
 resourceLoader = resourceLoaderGen
 
 -- | A more generic version of 'resourceLoader' which returns any type with a
 -- 'FromJSON' instance. It also handles and displays any conversion errors.
-resourceLoaderGen :: (FromJSON a) => (String -> IO String) -> [String] -> SiteM [a]
+resourceLoaderGen :: (FromJSON a) => (String -> IO String) -> [GlobPattern] -> SiteM [a]
 resourceLoaderGen fileReader patterns = do
   filenames <- concat <$> traverse srcGlob patterns
   traverse (loadWith fileReader) filenames
 
 -- | loads a file from filepath and applies a given filreader.
-loadWith :: (FromJSON a) => (String -> IO String) -> String -> SiteM a
+loadWith :: (FromJSON a) => (String -> IO String) -> FilePath -> SiteM a
 loadWith fileReader filepath = do
   Settings{srcDir} <- ask
   let relPath = makeRelative srcDir filepath

@@ -16,6 +16,8 @@ import Control.Monad.Writer
 import Control.Monad.Reader
 import qualified Text.Mustache.Types as MT
 
+-- | Given a template, produces a function compatible with 'SitePipe.Files.writeWith'
+-- which writes resources using the template.
 renderTemplate :: (ToJSON env) => M.Template -> env -> SiteM String
 renderTemplate template (toJSON -> env) = do
   gContext <- asks globalContext

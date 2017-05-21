@@ -1,21 +1,16 @@
 {-# language OverloadedStrings #-}
 module SitePipe.Utilities
-  ( simpleURL
-  , addPrefix
+  ( addPrefix
   , setExt
   ) where
 
 import System.FilePath.Posix
-import Data.Aeson.Types
-import Data.Aeson.Lens
-import Control.Lens
-import Data.Text.Lens
 
-simpleURL :: Value -> String
-simpleURL = view (key "url" . _String . unpacked)
-
-setExt :: String -> String -> String
+-- | Set the extension of a filepath or url to the given extension.
+-- Use @setExt ""@ to remove any extension.
+setExt :: String -> FilePath -> FilePath
 setExt = flip replaceExtension
 
-addPrefix :: String -> String -> String
+-- | Add a prefix to a filepath or url
+addPrefix :: String -> FilePath -> FilePath
 addPrefix = (++)

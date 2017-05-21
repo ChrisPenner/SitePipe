@@ -11,7 +11,7 @@ import qualified Text.Mustache.Types as MT
 
 main :: IO ()
 main = siteWithGlobals funcs $ do
-  posts <- fmap processPostTags <$> resourceLoader markdownReader ["**/*.md"]
+  posts <- fmap processPostTags <$> resourceLoader markdownReader ["posts/*.md"]
   let tags = byTags posts
   writeTemplate "templates/index.html" [mkIndexEnv posts tags]
   writeTemplate "templates/base.html" (over (key "tags" . _Array . traverse) stripHTMLSuffix <$> posts)

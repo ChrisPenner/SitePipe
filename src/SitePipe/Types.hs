@@ -1,10 +1,10 @@
 {-# language OverloadedStrings #-}
 module SitePipe.Types
-  ( SitePipeError(..)
-  , TemplatePath
-  , Pattern
+  ( TemplatePath
+  , GlobPattern
   , Settings(..)
   , SiteM
+  , SitePipeError(..)
   ) where
 
 import Control.Monad.Catch
@@ -16,17 +16,23 @@ import Control.Monad.Reader
 import Control.Monad.Writer
 import qualified Text.Mustache.Types as MT
 
+-- | String alias; Path to a template
 type TemplatePath = String
-type Pattern = String
 
+-- | String alias; Valid globbing pattern. Follows shell globbing, allows recursive @/**/*@ globs.
+type GlobPattern = String
+
+-- | A monad collecting site instructions. Use liftIO to perform arbitrary IO.
 type SiteM a = ReaderT Settings (WriterT [String] IO) a
 
+-- | Global Settings
 data Settings = Settings
   { srcDir :: FilePath
   , outputDir :: FilePath
   , globalContext :: MT.Value
   } deriving Show
 
+-- | Collection of possible errors.
 data SitePipeError =
   YamlErr String String
     | PParseErr P.ParseError
