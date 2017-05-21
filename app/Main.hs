@@ -6,15 +6,22 @@ import SitePipe
 import qualified Data.Map as M
 import Data.Text.Lens
 import qualified Data.Text as T
+import qualified Text.Mustache as MT
+import qualified Text.Mustache.Types as MT
 
 main :: IO ()
-main = site $ do
-  posts <- fmap processPostTags <$> resourceLoader markdownReader ["posts/*.md"]
+main = siteWithGlobals funcs $ do
+  posts <- fmap processPostTags <$> resourceLoader markdownReader ["**/*.md"]
   let tags = byTags posts
-  templateWriter "templates/index.html" [mkIndexEnv posts tags]
-  templateWriter "templates/base.html" (over (key "tags" . _Array . traverse) stripHTMLSuffix <$> posts)
-  templateWriter "templates/tag.html" (stripPostsHTMLSuffix <$> tags)
+  writeTemplate "templates/index.html" [mkIndexEnv posts tags]
+  writeTemplate "templates/base.html" (over (key "tags" . _Array . traverse) stripHTMLSuffix <$> posts)
+  writeTemplate "templates/tag.html" (stripPostsHTMLSuffix <$> tags)
   staticAssets
+
+funcs :: MT.Value
+funcs = MT.object
+  ["truncate" MT.~> MT.overText (T.take 30)
+  ]
 
 stripHTMLSuffix :: Value -> Value
 stripHTMLSuffix obj = obj

@@ -1,5 +1,4 @@
 {-# language OverloadedStrings #-}
-{-# language ViewPatterns #-}
 module SitePipe.Types
   ( SitePipeError(..)
   , TemplatePath
@@ -15,6 +14,7 @@ import qualified Text.Parsec as P
 import Text.Mustache.Render (SubstitutionError)
 import Control.Monad.Reader
 import Control.Monad.Writer
+import qualified Text.Mustache.Types as MT
 
 type TemplatePath = String
 type Pattern = String
@@ -24,6 +24,7 @@ type SiteM a = ReaderT Settings (WriterT [String] IO) a
 data Settings = Settings
   { srcDir :: FilePath
   , outputDir :: FilePath
+  , globalContext :: MT.Value
   } deriving Show
 
 data SitePipeError =

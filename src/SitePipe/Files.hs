@@ -4,12 +4,16 @@
 {-# language NamedFieldPuns #-}
 {-# language OverloadedStrings #-}
 module SitePipe.Files
-  ( loadTemplate
-  , resourceLoader
-  , resourceLoader'
-  , resourceWriter
-  , templateWriter
+  (
+  -- * Loaders
+  resourceLoader
+
+  -- * Writers
+  , writeWith
+  , writeTemplate
   , textWriter
+
+  -- * Loader/Writers
   , copyFiles
   , copyFilesWith
   ) where
@@ -36,20 +40,19 @@ import Shelly hiding ((</>), FilePath, relPath)
 import Data.String.Utils
 import Data.Bool
 
+-- | Given a filepath globbing pattern relative to your sources root
+-- this returns a list of absolute filepaths of matching files.
+-- Standard globbing rules apply.
+--
+-- * "posts/*.md": matches any markdown files in the posts directory of your source folder.
+-- * "**/*.txt": matches all text files recursively in your source folder.
 srcGlob :: String -> SiteM [String]
 srcGlob pattern@('/':_) = throwM $ SitePipeError ("glob pattern " ++ pattern ++ " must be a relative path")
 srcGlob pattern = do
   srcD <- asks srcDir
   liftIO $ G.glob (srcD </> pattern)
 
-resourceLoader' :: (FromJSON resource) => (String -> IO String) -> [String] -> SiteM [resource]
-resourceLoader' fileReader patterns = do
-  filenames <- concat <$> traverse srcGlob patterns
-  traverse (loadResource fileReader) filenames
-
-resourceLoader :: (String -> IO String) -> [String] -> SiteM [Value]
-resourceLoader = resourceLoader'
-
+-- | Loads a Mustache template given a relative filepath.
 loadTemplate :: String -> SiteM Template
 loadTemplate filePath = do
   srcD <- asks srcDir
@@ -58,20 +61,22 @@ loadTemplate filePath = do
     Left err -> throwM $ TemplateParseErr err
     Right template -> return template
 
-resourceWriter :: (ToJSON a) => (a -> SiteM String) -> [a] -> SiteM ()
-resourceWriter resourceRenderer resources =
-  traverse_ (writeResource resourceRenderer) resources
-
-templateWriter :: (ToJSON a) => FilePath -> [a] -> SiteM ()
-templateWriter templatePath resources = do
+-- | Given a path to a mustache template file (relative to your source directory);
+-- this writes a list of resources to the output directory by applying each one to the template.
+writeTemplate :: (ToJSON a) => FilePath -> [a] -> SiteM ()
+writeTemplate templatePath resources = do
   template <- loadTemplate templatePath
-  writeResources (renderTemplate template) resources
+  writeWith (renderTemplate template) resources
 
-writeResources :: (ToJSON a) => (a -> SiteM String) -> [a] -> SiteM ()
-writeResources = traverse_ . writeResource
+-- | Write a list of resources using the given processing function from a resource
+-- to a string.
+writeWith :: (ToJSON a) => (a -> SiteM String) -> [a] -> SiteM ()
+writeWith resourceRenderer resources =
+  traverse_ (writeOneWith resourceRenderer) resources
 
-writeResource :: (ToJSON a) => (a -> SiteM String) -> a -> SiteM ()
-writeResource renderer obj = do
+-- | Write a single resource to file using the given processing function.
+writeOneWith :: (ToJSON a) => (a -> SiteM String) -> a -> SiteM ()
+writeOneWith renderer obj = do
   outD <- asks outputDir
   renderedContent <- renderer obj
   let outFile = outD </> (toJSON obj ^. key "url" . _String . unpacked . to (dropWhile (== '/')))
@@ -79,12 +84,21 @@ writeResource renderer obj = do
   liftIO . putStrLn $ "Writing " ++ outFile
   liftIO $ writeFile outFile renderedContent
 
-
+-- | Writes the content of the given resources without using a template.
 textWriter :: (ToJSON a) => [a] -> SiteM ()
 textWriter resources =
-  writeResources (return . view (key "content" . _String . unpacked) . toJSON) resources
+  writeWith (return . view (key "content" . _String . unpacked) . toJSON) resources
 
-copyFilesWith :: (String -> String) -> [String] -> SiteM ()
+-- | Given a list of file or directory globs (see 'srcGlob')
+-- we copy matching files and directories as-is from the source directory
+-- to the output directory maintaining their relative filepath.
+copyFiles :: [String] -> SiteM ()
+copyFiles = copyFilesWith id
+
+-- | Runs 'copyFiles' but using a filepath transforming function to determine
+-- the output filepath. The filepath transformation accepts and should return
+-- a relative path.
+copyFilesWith :: (FilePath -> FilePath) -> [String] -> SiteM ()
 copyFilesWith transformPath patterns = do
   Settings{..} <- ask
   srcFilenames <- concat <$> traverse srcGlob patterns
@@ -98,11 +112,23 @@ copyFilesWith transformPath patterns = do
         echo $ T.concat ["Copying ",  T.pack src, " to ", T.pack dest]
         cp_r (fromString src) (fromString dest)
 
-copyFiles :: [String] -> SiteM ()
-copyFiles = copyFilesWith id
+-- | Given a resource reader (see "SitePipe.Readers")
+-- this function finds all files matching any of the provided list
+-- of fileglobs (according to 'srcGlob') and returns a list of loaded resources
+-- as Aeson 'Value's.
+resourceLoader :: (String -> IO String) -> [String] -> SiteM [Value]
+resourceLoader = resourceLoaderGen
 
-loadResource :: (FromJSON a) => (String -> IO String) -> String -> SiteM a
-loadResource fileReader filepath = do
+-- | A more generic version of 'resourceLoader' which returns any type with a
+-- 'FromJSON' instance. It also handles and displays any conversion errors.
+resourceLoaderGen :: (FromJSON a) => (String -> IO String) -> [String] -> SiteM [a]
+resourceLoaderGen fileReader patterns = do
+  filenames <- concat <$> traverse srcGlob patterns
+  traverse (loadWith fileReader) filenames
+
+-- | loads a file from filepath and applies a given filreader.
+loadWith :: (FromJSON a) => (String -> IO String) -> String -> SiteM a
+loadWith fileReader filepath = do
   Settings{srcDir} <- ask
   let relPath = makeRelative srcDir filepath
   file <- liftIO $ readFile filepath
@@ -116,6 +142,7 @@ loadResource fileReader filepath = do
         & _Object . at "content" ?~ String (T.pack content)
         & _Object . at "url" ?~ (String . T.pack . setExt "html" $ ("/" </> relPath))
 
+-- | Converts a 'Value' to a generic resource implementing 'FromJSON', handling any errors.
 valueToResource :: (MonadThrow m, FromJSON a) => Value -> m a
 valueToResource obj =
   case parseEither parseJSON obj of

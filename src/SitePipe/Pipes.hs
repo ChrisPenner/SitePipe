@@ -1,8 +1,9 @@
+{-# language ViewPatterns #-}
 {-# language RecordWildCards #-}
 {-# language OverloadedStrings #-}
-{-# language ViewPatterns #-}
 module SitePipe.Pipes
   ( site
+  , siteWithGlobals
   ) where
 
 
@@ -12,6 +13,8 @@ import Control.Monad.Reader
 import Data.Foldable
 import Control.Monad.Writer
 import Options.Applicative
+import qualified Text.Mustache.Types as MT
+import qualified Data.HashMap.Strict as HM
 
 import SitePipe.Types
 
@@ -24,6 +27,15 @@ site spec = do
     Left err -> print (err :: SitePipeError)
     Right _ -> unless (null warnings) (traverse_ putStrLn warnings)
 
+siteWithGlobals :: MT.Value -> SiteM () -> IO ()
+siteWithGlobals globals spec = do
+  settings <- execParser settingsInfo >>= adjSettings
+  clean settings
+  (result, warnings) <- runWriterT (runReaderT (Catch.try spec) settings{globalContext=globals})
+  case result of
+    Left err -> print (err :: SitePipeError)
+    Right _ -> unless (null warnings) (traverse_ putStrLn warnings)
+
 settingsInfo :: ParserInfo Settings
 settingsInfo = info (settingsP <**> helper)
             ( fullDesc <>
@@ -31,7 +43,7 @@ settingsInfo = info (settingsP <**> helper)
               header "SitePipe - simple static site generator")
 
 settingsP :: Parser Settings
-settingsP = Settings <$> strOption srcD <*> strOption outputD
+settingsP = Settings <$> strOption srcD <*> strOption outputD <*> pure (MT.Object HM.empty)
   where
     srcD = mconcat [ help "The directory where site source is stored"
                    , metavar "SOURCE_DIR"
