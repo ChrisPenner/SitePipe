@@ -6,6 +6,9 @@ module SitePipe.Readers
 
   -- * Reader Generators
   , mkPandocReader
+
+  -- * Pandoc Writers
+  , pandocToHTML
   ) where
 
 import Text.Pandoc
@@ -15,8 +18,20 @@ import Control.Monad.Catch
 -- makes a resource reader compatible with 'SitePipe.Files.resourceLoader'.
 --
 -- > docs <- resourceLoader (mkPandocReader readDocX) ["docs/*.docx"]
-mkPandocReader :: (ReaderOptions -> String -> (Either PandocError Pandoc)) -> String -> IO String
-mkPandocReader pReader content = writeHtmlString def <$> runPandocReader (pReader def) content
+mkPandocReader :: (ReaderOptions -> String -> Either PandocError Pandoc) -> String -> IO String
+mkPandocReader pReader = mkPandocReaderWith pReader id pandocToHTML
+
+-- | Like `mkPandocReader`, but allows you to provide both a @'Pandoc' -> 'Pandoc'@ transformation,
+-- which is great for things like relativizing links or running transforms over specific document elements. 
+-- See https://hackage.haskell.org/package/pandoc-lens for some useful tranformation helpers. You also specify
+-- the tranformation from @Pandoc -> String@ which allows you to pick the output format of the reader.
+-- If you're unsure what to use in this slot, the pandocToHTML function is a good choice.
+mkPandocReaderWith :: (ReaderOptions -> String -> Either PandocError Pandoc) -> (Pandoc -> Pandoc) -> (Pandoc -> String) -> String -> IO String
+mkPandocReaderWith pReader transformer writer content = writer . transformer <$> runPandocReader (pReader def) content
+
+-- | A simple helper which renders pandoc to HTML; good for use with 'mkPandocReaderWith'
+pandocToHTML :: Pandoc -> String
+pandocToHTML = writeHtmlString def
 
 -- | Runs the Pandoc reader handling errors.
 runPandocReader :: (MonadThrow m) => (String -> Either PandocError Pandoc) -> String -> m Pandoc
