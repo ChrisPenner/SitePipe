@@ -20,11 +20,17 @@ main = siteWithGlobals templateFuncs $ do
                             , "tags" .= tags
                             , "url" .= ("/index.html" :: String)
                             ]
+      rssContext :: Value
+      rssContext = object [ "posts" .= posts
+                          , "domain" .= ("http://chrispenner.ca" :: String)
+                          , "url" .= ("/rss.xml" :: String)
+                          ]
 
   -- Render index page, posts and tags respectively
   writeTemplate "templates/index.html" [indexContext]
   writeTemplate "templates/post.html" posts
   writeTemplate "templates/tag.html" tags
+  writeTemplate "templates/rss.xml" [rssContext]
   staticAssets
 
 -- We can provide a list of functions to be availabe in our mustache templates
