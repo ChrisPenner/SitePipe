@@ -18,7 +18,15 @@
 <div id="page">
             <section class="table-of-contents">
                 <h1>All Posts</h1>
-                {{>templates/tags.html}}
+                <div class="metadata">
+                    <br>
+                    <span class="tags">
+                        Tags<br>
+                        {{#tags}}
+                            <a class="tag" href="{{url}}">{{tag}}</a>
+                        {{/tags}}
+                    </span>
+                </div>
                 {{>templates/post-list.html}}
         </section>
 </div>
