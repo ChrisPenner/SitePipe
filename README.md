@@ -16,13 +16,29 @@ When I tried Hakyll specifically I got really bogged down; what was a
 `Compiler` monad? How does an `Item` work? How do I add a custom field? Why
 couldn't I just edit data directly like I'm used to doing in Haskell?
 
-# How is SitePipe different?
+# Getting Started
 
-Sitepipe is based around the idea that everything is just data; it's a library
-that provides a bunch of helpers for you, but at the end of the day; the way
-you fit the pipes together is up to you! There are only a few main concepts to
-understand in SitePipe, and hopefully you already know them from other projects
-you've worked on!
+The easiest way to get started is to clone this repo and try out the examples in the
+[examples](./examples) directory. There's a starter-template which is a barebones
+starting point, and also a slightly more complex blog with tags and an rss feed.
+You can build either of the examples using [Stack](http://seanhess.github.io/2015/08/04/practical-haskell-getting-started.html)
+by `cd`ing into the directory and running `stack build && stack exec build-site`.
+This creates a 'dist' folder with the results of the build. A quick way to serve
+the site is to use [Serve](https://www.npmjs.com/package/serve).
+
+Serving a site with [Serve](https://www.npmjs.com/package/serve):
+- `npm install -g serve`
+- `serve dist`
+- Navigate to the port which is serving (usually http://localhost:3000)
+
+# How is SitePipe different from other solutions?
+
+Instead of dealing with complex contexts SitePipe works with *values*. Values
+are loaded from files and can be rendered into html. What happens to the values
+in-between is up to you!
+
+SitePipe provides a bunch of helpers for you, but at the end of the day you can
+fit the pipes together however you like.
 
 # Concepts
 
