@@ -33,6 +33,7 @@ module SitePipe
   -- * Utilities
   , setExt
   , addPrefix
+  , getTags
 
   -- * Types
   , module SitePipe.Types

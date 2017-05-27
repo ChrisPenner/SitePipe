@@ -43,6 +43,7 @@ library
                      , aeson
                      , shelly
                      , MissingH
+                     , containers
 
   default-language:    Haskell2010
 
@@ -55,7 +56,6 @@ executable sitepipe-exe
                      , text
                      , mustache >= 2.2.3
                      , lens
-                     , containers
   default-language:    Haskell2010
 
 test-suite sitepipe-test
