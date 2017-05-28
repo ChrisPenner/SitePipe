@@ -20,4 +20,5 @@ executable build-site
   build-depends:       base
                       , sitepipe
                       , mustache >= 2.2.3
+                      , text
   default-language:    Haskell2010

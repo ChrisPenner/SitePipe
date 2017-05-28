@@ -116,7 +116,9 @@ copyFilesWith transformPath patterns = do
 -- this function finds all files matching any of the provided list
 -- of fileglobs (according to 'srcGlob') and returns a list of loaded resources
 -- as Aeson 'Value's.
-resourceLoader :: (String -> IO String) -> [GlobPattern] -> SiteM [Value]
+resourceLoader :: (String -> IO String) -- ^ A reader which processes file contents
+               -> [GlobPattern] -- ^ File glob; relative to the @site@ directory
+               -> SiteM [Value] -- ^ Returns a list of Aeson objects
 resourceLoader = resourceLoaderGen
 
 -- | A more generic version of 'resourceLoader' which returns any type with a
