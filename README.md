@@ -2,23 +2,24 @@
 
 ### Contents:
 
-- [What is it?](#what-is-it)
-- ## What's it look like?
-- ## Wait, another static site generator? What about Hakyll/Jekyll?
-- [Getting Started](#get-started)
-- ## Quick Start
-- ## Tutorial
-- # How is SitePipe different from other solutions?
-- # Concepts
-- ##   Templating
-- ## Loaders
-- ## Reader
-- ## Writers
-- ## Loader/Writers
-- ## Utilities
-- # Issues/Troubleshooting
-
-
+-   [What is it?](#what-is-it)
+    -   [What's it look like?](#whats-it-look-like)
+    -   [Wait, another static site generator? What about
+        Hakyll/Jekyll?](#wait-another-static-site-generator-what-about-hakylljekyll)
+-   [Getting Started](#getting-started)
+    -   [Quick Start](#quick-start)
+    -   [Tutorial](#tutorial)
+-   [Concepts](#concepts)
+    -   [How is SitePipe different from other
+        solutions?](#how-is-sitepipe-different-from-other-solutions)
+    -   [Data/Metadata](#datametadata)
+    -   [Templating](#templating)
+    -   [Loaders](#loaders)
+    -   [Reader](#reader)
+    -   [Writers](#writers)
+    -   [Loader/Writers](#loaderwriters)
+    -   [Utilities](#utilities)
+-   [Issues/Troubleshooting](#issuestroubleshooting)
 
 ## What is it?
 
@@ -64,7 +65,7 @@ When I tried Hakyll specifically I got really bogged down; what was a
 `Compiler` monad? How does an `Item` work? How do I add a custom field? Why
 couldn't I just edit data directly like I'm used to doing in Haskell?
 
-# Getting Started (#get-started)
+# Getting Started
 
 ## Quick Start
 
@@ -86,7 +87,10 @@ Serving a site with [Serve](https://www.npmjs.com/package/serve):
 Read the walkthrough of the system [HERE](./docs/tutorial.md); it'll run you through the basics
 of how the system works and how to make your own customizations!
 
-# How is SitePipe different from other solutions?
+# Concepts
+
+How is SitePipe different from other solutions?
+-----------------------------------------------
 
 Instead of dealing with complex contexts SitePipe works with *values*. Values
 are loaded from files and can be rendered into html. What happens to the values
@@ -95,10 +99,7 @@ in-between is up to you!
 SitePipe provides a bunch of helpers for you, but at the end of the day you can
 fit the pipes together however you like.
 
-# Concepts
-
-Data/Metadata
--------------
+## Data/Metadata
 
 Metadata for posts and content is parsed from yaml into [Aeson's `Value`
 type](https://hackage.haskell.org/package/aeson); Unlike Hakyll which depends
@@ -109,7 +110,7 @@ object which implements `FromJSON` (or just leave them as Aeson Values) and you
 have the option to edit the objects directly without worrying about monadic or
 external context.
 
-##   Templating
+## Templating
 
 SitePipe has built-in support for [Mustache
 Templates](https://mustache.github.io/mustache.5.html), specifically [Justus
