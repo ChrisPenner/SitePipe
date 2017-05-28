@@ -1,20 +1,29 @@
 # SitePipe
 
+### Contents:
+
+- [What is it?](#what-is-it)
+- ## What's it look like?
+- ## Wait, another static site generator? What about Hakyll/Jekyll?
+- [Getting Started](#get-started)
+- ## Quick Start
+- ## Tutorial
+- # How is SitePipe different from other solutions?
+- # Concepts
+- ##   Templating
+- ## Loaders
+- ## Reader
+- ## Writers
+- ## Loader/Writers
+- ## Utilities
+- # Issues/Troubleshooting
+
+
+
 ## What is it?
 
 It's a simple to understand static site generator for making blogs, personal
 websites, etc.
-
-## Wait, another static site generator? What about Hakyll/Jekyll?
-
-Yup, yet another static site generator. The reason for it is that I tried using
-Hakyll and Jekyll on different occasions and found there was too much magic
-going on for me to understand how to customize things for my use-cases. They were
-too opinionated without giving me escape hatches to wire in my own functionality.
-
-When I tried Hakyll specifically I got really bogged down; what was a
-`Compiler` monad? How does an `Item` work? How do I add a custom field? Why
-couldn't I just edit data directly like I'm used to doing in Haskell?
 
 ## What's it look like?
 
@@ -44,7 +53,18 @@ main = site $ do
   writeTemplate "templates/post.html" posts
 ```
 
-# Getting Started
+## Wait, another static site generator? What about Hakyll/Jekyll?
+
+Yup, yet another static site generator. The reason for it is that I tried using
+Hakyll and Jekyll on different occasions and found there was too much magic
+going on for me to understand how to customize things for my use-cases. They were
+too opinionated without giving me escape hatches to wire in my own functionality.
+
+When I tried Hakyll specifically I got really bogged down; what was a
+`Compiler` monad? How does an `Item` work? How do I add a custom field? Why
+couldn't I just edit data directly like I'm used to doing in Haskell?
+
+# Getting Started (#get-started)
 
 ## Quick Start
 
