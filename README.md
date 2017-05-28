@@ -16,7 +16,37 @@ When I tried Hakyll specifically I got really bogged down; what was a
 `Compiler` monad? How does an `Item` work? How do I add a custom field? Why
 couldn't I just edit data directly like I'm used to doing in Haskell?
 
+## What's it look like?
+
+Here's a dead-simple blog generated from markdown files, you can see it in action in
+[examples/starter-template](./examples/starter-template), or build on it in the [tutorial](./docs/tutorial.md)
+
+```haskell
+{-# language OverloadedStrings #-}
+module Main where
+
+import SitePipe
+
+main :: IO ()
+main = site $ do
+  -- Load all the posts from site/posts/
+  posts <- resourceLoader markdownReader ["posts/*.md"]
+
+  -- Build up a context for our index page
+  let indexContext :: Value
+      indexContext = object [ "posts" .= posts
+                            -- The url is where the index page will be written to
+                            , "url" .= ("/index.html" :: String)
+                            ]
+
+  -- write out index page and posts via templates
+  writeTemplate "templates/index.html" [indexContext]
+  writeTemplate "templates/post.html" posts
+```
+
 # Getting Started
+
+## Quick Start
 
 The easiest way to get started is to clone this repo and try out the examples in the
 [examples](./examples) directory. There's a starter-template which is a barebones
@@ -30,6 +60,11 @@ Serving a site with [Serve](https://www.npmjs.com/package/serve):
 - `npm install -g serve`
 - `serve dist`
 - Navigate to the port which is serving (usually http://localhost:3000)
+
+## Tutorial
+
+Read the walkthrough of the system [HERE](./docs/tutorial.md); it'll run you through the basics
+of how the system works and how to make your own customizations!
 
 # How is SitePipe different from other solutions?
 
@@ -112,3 +147,7 @@ for each file.
 
 Sitepipe includes a few utilities which simply make working with sites easier.
 The included utilities will expand as time goes on.
+
+# Issues/Troubleshooting
+
+Feel free to file an [issue](https://github.com/chrispenner/sitepipe/issues) if you run into any trouble!
