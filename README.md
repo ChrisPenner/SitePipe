@@ -33,7 +33,18 @@ websites, etc.
 
 ## What's it look like?
 
-Here's a dead-simple blog generated from markdown files, you can see it in action in
+Start by setting up the structure of your website in a `site` folder:
+
+```
+site
+├── templates
+│   ├── post.html
+│   └── index.html
+└── posts
+    └── article.md
+```
+
+Here's a dead-simple blog generator using markdown posts, you can see it in action in
 [examples/starter-template](./examples/starter-template), or build on it in the [tutorial](./docs/tutorial.md)
 
 ```haskell
@@ -61,14 +72,16 @@ main = site $ do
 
 ## Wait, another static site generator? What about Hakyll/Jekyll?
 
-Yup, yet another static site generator. The reason for it is that I tried using
-Hakyll and Jekyll on different occasions and found there was too much magic
-going on for me to understand how to customize things for my use-cases. They were
-too opinionated without giving me escape hatches to wire in my own functionality.
-
-When I tried Hakyll specifically I got really bogged down; what was a
+Yup, yet another static site generator. I've tried using Hakyll and Jekyll on
+different occasions and found there was too much magic going on with all of the
+monadic contexts for me to understand how to customize things for my use-cases.
+Even adding simple tags/categories to my blog seemed far more complex then it
+needed to be; Hakyll specifically got me really bogged down; what was the
 `Compiler` monad? How does an `Item` work? How do I add a custom field? Why
-couldn't I just edit data directly like I'm used to doing in Haskell?
+couldn't I just edit data directly like I'm used to doing in Haskell? They
+seemed a bit too opinionated without giving me escape hatches to wire in my own
+functionality. If they're working for you, then great! But they weren't working
+for me, so that's where SitePipe came from.
 
 # Getting Started
 
