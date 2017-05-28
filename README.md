@@ -1,5 +1,7 @@
 # SitePipe
 
+[![Join the chat at https://gitter.im/SitePipe/Lobby](https://badges.gitter.im/SitePipe/Lobby.svg)](https://gitter.im/SitePipe/Lobby?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+
 Heads up! If you're reading this from the Hackage docs the links will be broken, go
 read it on [Github](https://github.com/chrispenner/sitepipe).
 
