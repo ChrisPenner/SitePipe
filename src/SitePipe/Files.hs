@@ -63,14 +63,20 @@ loadTemplate filePath = do
 
 -- | Given a path to a mustache template file (relative to your source directory);
 -- this writes a list of resources to the output directory by applying each one to the template.
-writeTemplate :: (ToJSON a) => FilePath -> [a] -> SiteM ()
+writeTemplate :: (ToJSON a)
+                 => FilePath -- ^ Path to template (relative to site dir)
+                 -> [a]  -- ^ List of resources to write
+                 -> SiteM ()
 writeTemplate templatePath resources = do
   template <- loadTemplate templatePath
   writeWith (renderTemplate template) resources
 
 -- | Write a list of resources using the given processing function from a resource
 -- to a string.
-writeWith :: (ToJSON a) => (a -> SiteM String) -> [a] -> SiteM ()
+writeWith :: (ToJSON a)
+          => (a -> SiteM String) -- ^ A function which renders a resource to a string.
+          -> [a] -- ^ List of resources to write
+          -> SiteM ()
 writeWith resourceRenderer resources =
   traverse_ (writeOneWith resourceRenderer) resources
 
@@ -85,7 +91,9 @@ writeOneWith renderer obj = do
   liftIO $ writeFile outFile renderedContent
 
 -- | Writes the content of the given resources without using a template.
-textWriter :: (ToJSON a) => [a] -> SiteM ()
+textWriter :: (ToJSON a)
+           => [a] -- ^ List of resources to write
+           -> SiteM ()
 textWriter resources =
   writeWith (return . view (key "content" . _String . unpacked) . toJSON) resources
 
