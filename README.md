@@ -1,5 +1,8 @@
 # SitePipe
 
+Heads up! If you're reading this from the Hackage docs the links will be broken, go
+read it on [Github](https://github.com/chrispenner/sitepipe).
+
 ### Contents:
 
 -   [What is it?](#what-is-it)
