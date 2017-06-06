@@ -7,6 +7,7 @@ module SitePipe.Pipes
 
 
 import Control.Monad.Catch as Catch
+import Development.Shake hiding (doesDirectoryExist)
 import System.Directory
 import Control.Monad.Reader
 import Data.Foldable
@@ -52,10 +53,13 @@ siteWithGlobals :: MT.Value -> SiteM () -> IO ()
 siteWithGlobals globals spec = do
   settings <- execParser settingsInfo >>= adjSettings
   clean (outputDir settings)
-  (result, warnings) <- runWriterT (runReaderT (Catch.try spec) settings{globalContext=globals})
+  (result, (warnings, rules)) <- runWriterT (runReaderT (Catch.try spec) settings{globalContext=globals})
   case result of
     Left err -> print (err :: SitePipeError)
-    Right _ -> unless (null warnings) (traverse_ putStrLn warnings)
+    Right _ -> do
+      unless (null warnings) (traverse_ putStrLn warnings)
+      putStrLn "===SHAKE==="
+      shake shakeOptions rules
 
 -- | Argument info for option parsing.
 settingsInfo :: ParserInfo Settings

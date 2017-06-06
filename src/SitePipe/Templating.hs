@@ -25,7 +25,7 @@ renderTemplate template (toJSON -> env) = do
   case M.checkedSubstitute template fullContext of
     ([], result) -> return (T.unpack result)
     (errs, r) -> do
-      tell $ ["*** Warnings rendering " ++ path ++ "***"] ++ (fmap show errs) ++ ["------"]
+      tell $ (["*** Warnings rendering " ++ path ++ "***"] ++ (fmap show errs) ++ ["------"], mempty)
       return (T.unpack r)
   where
     path = env ^. key "filepath" . _String . unpacked

@@ -23,6 +23,7 @@ library
                      , SitePipe.Types
                      , SitePipe.Utilities
   build-depends:       base >= 4.9 && < 5
+                     , shake
                      , optparse-applicative
                      , unordered-containers
                      , directory
