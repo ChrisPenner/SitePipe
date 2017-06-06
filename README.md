@@ -121,8 +121,7 @@ fit the pipes together however you like.
 ## Data/Metadata
 
 Metadata for posts and content is parsed from yaml into [Aeson's `Value`
-type](https://hackage.haskell.org/package/aeson); Unlike Hakyll which depends
-on Pandoc's metadata blocks which can only accept Strings as values, Aeson can
+type](https://hackage.haskell.org/package/aeson); Aeson can
 easily represent nested objects or lists inside your metadata, and there's a
 rich ecosystem for working with Aeson types! You can load resources in as any
 object which implements `FromJSON` (or just leave them as Aeson Values) and you
