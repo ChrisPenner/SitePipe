@@ -447,7 +447,7 @@ addReadingTime post = ???
       content :: T.Text
       content = post ^. key "content" . _String
       readingTime :: T.Text
-      readingTime = T.pack (show (length $ T.words content) ++ " mins")
+      readingTime = T.pack (show (div (length $ T.words content) 60) ++ " mins")
 ```
 
 Okay! We've computed the estimated reading time, now let's add that as a key
@@ -472,7 +472,7 @@ addReadingTime post = post & _Object . at "readingTime" .~ Just (String readingT
       content :: T.Text
       content = post ^. key "content" . _String
       readingTime :: T.Text
-      readingTime = T.pack (show (length $ T.words content) ++ " mins")
+      readingTime = T.pack (show (div (length $ T.words content) 60) ++ " mins")
 ```
 
 So the trick here is that first we assert that post should be an object, if
@@ -498,7 +498,7 @@ addReadingTime post = post & _Object . at "readingTime" .~ Just (String readingT
       content :: T.Text
       content = post ^. key "content" . _String
       readingTime :: T.Text
-      readingTime = T.pack (show (length $ T.words content) ++ " mins")
+      readingTime = T.pack (show (div (length $ T.words content) 60) ++ " mins")
 
 main :: IO ()
 main = site $ do
