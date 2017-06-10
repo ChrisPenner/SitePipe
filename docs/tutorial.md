@@ -459,7 +459,7 @@ post & key "readingTime" .~ String readingTime
 ```
 
 This is a good thought, but this actually won't affect a post at all, remember
-earlier how we said that the `key` can fail if the key doesn't exist? Well int this
+earlier how we said that the `key` can fail if the key doesn't exist? Well in this
 case we're telling lens to access the key `readingTime` IF it exists, then set something
 into it, but the key doesn't exist so the whole thing fails and nothing gets set!
 
@@ -491,6 +491,7 @@ whole thing looks like:
 module Main where
 
 import SitePipe
+import qualified Data.Text as T
 
 addReadingTime :: Value -> Value
 addReadingTime post = post & _Object . at "readingTime" .~ Just (String readingTime)
