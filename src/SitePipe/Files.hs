@@ -18,6 +18,7 @@ module SitePipe.Files
   , copyFilesWith
   ) where
 
+import Development.Shake
 import Data.String
 import Control.Monad.Catch
 import Data.Foldable
@@ -111,14 +112,19 @@ copyFilesWith transformPath patterns = do
   Settings{..} <- ask
   srcFilenames <- concat <$> traverse srcGlob patterns
   let destFilenames = (outputDir </>) . transformPath . makeRelative srcDir <$> srcFilenames
-  shelly $ do
-    let getDir pth = bool (takeDirectory) (takeDirectory . takeDirectory) (endswith "/" pth) $ pth
-    traverse_ (mkdir_p . fromString . getDir) destFilenames
-    traverse_ copy (zip srcFilenames destFilenames)
+  addRule $ do
+    want destFilenames
+    fold $ zipWith copyOne srcFilenames destFilenames
+  -- shelly $ do
+  --   let getDir pth = bool (takeDirectory) (takeDirectory . takeDirectory) (endswith "/" pth) $ pth
+  --   traverse_ (mkdir_p . fromString . getDir) destFilenames
+  --   traverse_ copy (zip srcFilenames destFilenames)
     where
-      copy (src, dest) = do
-        echo $ T.concat ["Copying ",  T.pack src, " to ", T.pack dest]
-        cp_r (fromString src) (fromString dest)
+  --     copy (src, dest) = do
+  --       echo $ T.concat ["Copying ",  T.pack src, " to ", T.pack dest]
+  --       cp_r (fromString src) (fromString dest)
+
+      copyOne src dest = dest %> copyFile' src
 
 -- | Given a resource reader (see "SitePipe.Readers")
 -- this function finds all files matching any of the provided list

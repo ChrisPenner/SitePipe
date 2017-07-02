@@ -5,6 +5,7 @@ module SitePipe.Types
   , Settings(..)
   , SiteM
   , SitePipeError(..)
+  , addRule
   ) where
 
 import Control.Monad.Catch
@@ -56,3 +57,6 @@ instance Show SitePipeError where
   show (SitePipeError err) = err
 
 instance Exception SitePipeError
+
+addRule :: Rules () -> SiteM ()
+addRule rule = tell (mempty, rule)
