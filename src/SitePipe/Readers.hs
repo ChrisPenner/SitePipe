@@ -31,7 +31,7 @@ mkPandocReaderWith pReader transformer writer content = writer . transformer <$>
 
 -- | A simple helper which renders pandoc to HTML; good for use with 'mkPandocReaderWith'
 pandocToHTML :: Pandoc -> String
-pandocToHTML = writeHtmlString def
+pandocToHTML = writeHtmlString def{writerHighlight=True}
 
 -- | Runs the Pandoc reader handling errors.
 runPandocReader :: (MonadThrow m) => (String -> Either PandocError Pandoc) -> String -> m Pandoc
