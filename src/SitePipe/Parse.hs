@@ -1,16 +1,25 @@
+{-# language CPP #-}
+
 module SitePipe.Parse
   ( processSource
   ) where
 
 import Control.Monad.Catch hiding (try)
 import Text.Megaparsec
-import Text.Megaparsec.String
 import Data.Aeson
 import qualified Data.HashMap.Lazy as HM
 import Data.Yaml hiding (Parser)
 import SitePipe.Types
 import Data.ByteString.Char8 (pack)
 import Data.Maybe
+
+#if MIN_VERSION_megaparsec(6,0,0)
+import Text.Megaparsec.Char
+import Data.Void
+type Parser = Parsec Void String
+#else
+import Text.Megaparsec.String
+#endif
 
 -- | Parses yaml block from the file if it exists, returning the inner yaml block and the remaining file contents
 resourceP :: Parser (String, String)
