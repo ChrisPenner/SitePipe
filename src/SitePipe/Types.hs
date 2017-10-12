@@ -21,7 +21,7 @@ import qualified Text.Mustache.Types as MT
 import Data.Void (Void)
 type MPErr = Void
 #else
-type MPErr = Dec
+type MPErr = MP.Dec
 #endif
 
 -- | String alias; Path to a template
