@@ -1,3 +1,5 @@
+# SitePipe 
+[![Build Status](https://travis-ci.org/ChrisPenner/SitePipe.svg?branch=master)](https://travis-ci.org/ChrisPenner/SitePipe)
 [![Hackage](https://img.shields.io/badge/hackage-latest-green.svg)](https://hackage.haskell.org/package/sitepipe)
 [![Join the chat at https://gitter.im/SitePipe/Lobby](https://badges.gitter.im/SitePipe/Lobby.svg)](https://gitter.im/SitePipe/Lobby?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
