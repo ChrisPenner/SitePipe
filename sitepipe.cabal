@@ -11,7 +11,7 @@ category:            Web
 build-type:          Simple
 extra-source-files:  README.md
 cabal-version:       >=1.10
-Tested-With:        GHC == 8.0.2, GHC == 8.2.1
+Tested-With:         GHC == 8.0.2, GHC == 8.2.1
 
 library
   hs-source-dirs:      src
