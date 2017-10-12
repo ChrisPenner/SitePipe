@@ -1,4 +1,5 @@
 {-# language OverloadedStrings #-}
+{-# language CPP #-}
 module SitePipe.Types
   ( TemplatePath
   , GlobPattern
@@ -15,6 +16,13 @@ import Text.Mustache.Render (SubstitutionError)
 import Control.Monad.Reader
 import Control.Monad.Writer
 import qualified Text.Mustache.Types as MT
+
+#if MIN_VERSION_megaparsec(6,0,0)
+import Data.Void (Void)
+type MPErr = Void
+#else
+type MPErr = MP.Dec
+#endif
 
 -- | String alias; Path to a template
 type TemplatePath = String
@@ -36,7 +44,7 @@ data Settings = Settings
 data SitePipeError =
   YamlErr String String
     | PParseErr P.ParseError
-    | MParseErr (MP.ParseError (MP.Token String) MP.Dec)
+    | MParseErr (MP.ParseError (MP.Token String) MPErr)
     | PandocErr PandocError
     | JSONErr String String
     | TemplateParseErr P.ParseError
