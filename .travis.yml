@@ -26,26 +26,15 @@ matrix:
       compiler: ": #stack 8.0.2 osx"
       os: osx
 
-# Note: the distinction between `before_install` and `install` is not important.
-# - in before_install we install build tools
-# - in install we install (haskell) dependencies
-before_install:
+install:
  - unset CC
  - export PATH=$HOME/.local/bin:/opt/ghc/$GHCVER/bin:$PATH
  - ./.travis-setup.sh
 
-install:
- - echo "$(ghc --version) [$(ghc --print-project-git-commit-id 2> /dev/null || echo '?')]"
- # Note: we build store by itself below due to high memory usage
- - |
-   set -ex
-   stack --no-terminal build store
-   stack --no-terminal test --only-dependencies
-   set +ex
-
 script:
+ - echo "$(ghc --version) [$(ghc --print-project-git-commit-id 2> /dev/null || echo '?')]"
  - GHC_OPTIONS="-Werror"
  - |
    set -ex
-   stack --no-terminal test --haddock --no-haddock-deps --ghc-options="$GHC_OPTIONS"
+   stack --no-terminal test --ghc-options="$GHC_OPTIONS"
    set +ex
