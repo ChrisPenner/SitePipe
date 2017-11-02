@@ -1,5 +1,5 @@
 name:                sitepipe
-version:             0.1.1
+version:             0.2.0.0
 synopsis:            A simple to understand static site generator
 homepage:            https://github.com/ChrisPenner/sitepipe#readme
 license:             BSD3
