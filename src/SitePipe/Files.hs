@@ -116,8 +116,9 @@ copyFilesWith :: (FilePath -> FilePath) -> [GlobPattern] -> SiteM [Value]
 copyFilesWith transformPath patterns = do
   Settings{..} <- ask
   srcFilenames <- concat <$> traverse srcGlob patterns
-  let outputURLs = transformPath . makeRelative srcDir <$> srcFilenames
-      destFilenames = (outputDir </>) <$> outputURLs
+  let outputPaths = normalise . transformPath . makeRelative srcDir <$> srcFilenames
+      outputURLs = ("/" </>) <$> outputPaths
+      destFilenames = (outputDir </>) <$> outputPaths
   shelly $ do
     let getDir pth = bool (takeDirectory) (takeDirectory . takeDirectory) (endswith "/" pth) $ pth
     traverse_ (mkdir_p . fromString . getDir) destFilenames

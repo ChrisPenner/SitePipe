@@ -31,7 +31,8 @@ main = siteWithGlobals templateFuncs $ do
   writeTemplate "templates/post.html" posts
   writeTemplate "templates/tag.html" tags
   writeTemplate "templates/rss.xml" [rssContext]
-  staticAssets
+  files <- staticAssets
+  liftIO $ print files
 
 -- We can provide a list of functions to be availabe in our mustache templates
 templateFuncs :: MT.Value
@@ -43,7 +44,7 @@ makeTagUrl :: String -> String
 makeTagUrl tagName = "/tags/" ++ tagName ++ ".html"
 
 -- | All the static assets can just be copied over from our site's source
-staticAssets :: SiteM ()
+staticAssets :: SiteM [Value]
 staticAssets = copyFiles
     -- We can copy a glob
     [ "css/*.css"
