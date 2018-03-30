@@ -24,7 +24,7 @@ import Data.Foldable
 import SitePipe.Templating
 import SitePipe.Types
 import qualified System.FilePath.Glob as G
-import Data.Aeson
+import Data.Aeson as A
 import Data.Aeson.Lens
 import Data.Aeson.Types
 import Control.Lens
@@ -100,25 +100,35 @@ textWriter resources =
 -- | Given a list of file or directory globs (see 'srcGlob')
 -- we copy matching files and directories as-is from the source directory
 -- to the output directory maintaining their relative filepath.
-copyFiles :: [GlobPattern] -> SiteM ()
+--
+-- For convenience this also returns a list of the files copied as 
+-- 'Value's with  "src" and "url" keys
+-- which represent the source path and the url.of the copied file respectively.
+copyFiles :: [GlobPattern] -> SiteM [Value]
 copyFiles = copyFilesWith id
 
 -- | Runs 'copyFiles' but using a filepath transforming function to determine
 -- the output filepath. The filepath transformation accepts and should return
 -- a relative path.
-copyFilesWith :: (FilePath -> FilePath) -> [GlobPattern] -> SiteM ()
+--
+-- See 'copyFiles' for more information.
+copyFilesWith :: (FilePath -> FilePath) -> [GlobPattern] -> SiteM [Value]
 copyFilesWith transformPath patterns = do
   Settings{..} <- ask
   srcFilenames <- concat <$> traverse srcGlob patterns
-  let destFilenames = (outputDir </>) . transformPath . makeRelative srcDir <$> srcFilenames
+  let outputURLs = transformPath . makeRelative srcDir <$> srcFilenames
+      destFilenames = (outputDir </>) <$> outputURLs
   shelly $ do
     let getDir pth = bool (takeDirectory) (takeDirectory . takeDirectory) (endswith "/" pth) $ pth
     traverse_ (mkdir_p . fromString . getDir) destFilenames
     traverse_ copy (zip srcFilenames destFilenames)
+  return . fmap (uncurry mkFileValue) $ zip srcFilenames outputURLs
     where
       copy (src, dest) = do
         echo $ T.concat ["Copying ",  T.pack src, " to ", T.pack dest]
         cp_r (fromString src) (fromString dest)
+
+      mkFileValue src url = A.object ["src" A..= src, "url" A..= url]
 
 -- | Given a resource reader (see "SitePipe.Readers")
 -- this function finds all files matching any of the provided list
