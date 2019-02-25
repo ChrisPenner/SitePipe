@@ -26,7 +26,7 @@ resourceP :: Parser (String, String)
 resourceP = do
   yaml <- fromMaybe "" <$> optional yamlParser
   space
-  rest <- manyTill anyChar eof
+  rest <- manyTill anySingle eof
   return (yaml, rest)
 
 -- | Given an identifier and file contents runs the yaml parser and returns
@@ -42,7 +42,7 @@ splitMeta ident str =
 yamlParser :: Parser String
 yamlParser = do
   _ <- yamlSep
-  manyTill anyChar (try (eol >> yamlSep))
+  manyTill anySingle (try (eol >> yamlSep))
     where
       yamlSep = string "---" >> eol
 

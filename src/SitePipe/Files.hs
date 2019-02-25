@@ -101,7 +101,7 @@ textWriter resources =
 -- we copy matching files and directories as-is from the source directory
 -- to the output directory maintaining their relative filepath.
 --
--- For convenience this also returns a list of the files copied as 
+-- For convenience this also returns a list of the files copied as
 -- 'Value's with  "src" and "url" keys
 -- which represent the source path and the url.of the copied file respectively.
 copyFiles :: [GlobPattern] -> SiteM [Value]
