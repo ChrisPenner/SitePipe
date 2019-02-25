@@ -8,6 +8,8 @@ module SitePipe.Readers
 
   -- * Reader Generators
   , mkPandocReader
+  , mkPandocReaderWith
+  , readMarkdown
 
   -- * Pandoc Writers
   , pandocToHTML
@@ -26,16 +28,16 @@ import Data.Text (pack, unpack)
 --
 -- > docs <- resourceLoader (mkPandocReader readDocX) ["docs/*.docx"]
 mkPandocReader :: (ReaderOptions -> String -> PandocIO Pandoc) -> String -> IO String
-mkPandocReader pReader = mkPandocReaderWith pReader id pandocToHTML
+mkPandocReader pReader = mkPandocReaderWith pReader pure pandocToHTML
 
 -- | Like `mkPandocReader`, but allows you to provide both a @'Pandoc' -> 'Pandoc'@ transformation,
 -- which is great for things like relativizing links or running transforms over specific document elements.
 -- See https://hackage.haskell.org/package/pandoc-lens for some useful tranformation helpers. You also specify
 -- the tranformation from @Pandoc -> String@ which allows you to pick the output format of the reader.
 -- If you're unsure what to use in this slot, the pandocToHTML function is a good choice.
-mkPandocReaderWith :: (ReaderOptions -> String -> PandocIO Pandoc) -> (Pandoc -> Pandoc) -> (Pandoc -> PandocIO String) -> String -> IO String
+mkPandocReaderWith :: (ReaderOptions -> String -> PandocIO Pandoc) -> (Pandoc -> PandocIO Pandoc) -> (Pandoc -> PandocIO String) -> String -> IO String
 mkPandocReaderWith pReader transformer writer content =
-  runPandoc $ writer =<< transformer <$> pReader def content
+  runPandoc $ writer =<< transformer =<< pReader def content
 
 -- | A simple helper which renders pandoc to HTML; good for use with 'mkPandocReaderWith'
 pandocToHTML :: Pandoc -> PandocIO String
