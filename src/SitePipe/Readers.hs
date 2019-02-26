@@ -37,7 +37,10 @@ mkPandocReader pReader = mkPandocReaderWith pReader pure pandocToHTML
 -- If you're unsure what to use in this slot, the pandocToHTML function is a good choice.
 mkPandocReaderWith :: (ReaderOptions -> String -> PandocIO Pandoc) -> (Pandoc -> PandocIO Pandoc) -> (Pandoc -> PandocIO String) -> String -> IO String
 mkPandocReaderWith pReader transformer writer content =
-  runPandoc $ writer =<< transformer =<< pReader def content
+  runPandoc $ writer
+          =<< transformer
+          =<< pReader def{readerExtensions = githubMarkdownExtensions}
+                      content
 
 -- | A simple helper which renders pandoc to HTML; good for use with 'mkPandocReaderWith'
 pandocToHTML :: Pandoc -> PandocIO String
