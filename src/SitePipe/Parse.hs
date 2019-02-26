@@ -49,8 +49,8 @@ yamlParser = do
 -- | Decodes a yaml metadata block into an Aeson object containing the data in the yaml.
 decodeMeta :: MonadThrow m => String -> String -> m Value
 decodeMeta ident metaBlock =
-  case decodeEither (pack metaBlock) of
-    Left err -> throwM (YamlErr ident err)
+  case decodeEither' (pack metaBlock) of
+    Left err -> throwM (YamlErr ident (show err))
     Right (Object metaObj) -> return (Object metaObj)
     Right Null -> return (Object HM.empty)
     Right _ -> throwM (YamlErr ident "Top level yaml must be key-value pairs")
