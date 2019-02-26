@@ -1,3 +1,5 @@
+{-# LANGUAGE FlexibleContexts #-}
+
 module SitePipe.Readers
   (
   -- * Built-in readers
@@ -6,44 +8,56 @@ module SitePipe.Readers
 
   -- * Reader Generators
   , mkPandocReader
+  , mkPandocReaderWith
+  , readMarkdown
 
   -- * Pandoc Writers
   , pandocToHTML
   ) where
 
-import Text.Pandoc
+import Control.Monad.Trans.Except
+import Control.Monad.Trans.State.Strict
 import Control.Monad.Catch
+import Text.Pandoc
+import Text.Pandoc.Options
+import Text.Pandoc.Highlighting
+import Data.Text (pack, unpack)
 
 -- | Given any standard pandoc reader (see "Text.Pandoc"; e.g. 'readMarkdown', 'readDocX')
 -- makes a resource reader compatible with 'SitePipe.Files.resourceLoader'.
 --
 -- > docs <- resourceLoader (mkPandocReader readDocX) ["docs/*.docx"]
-mkPandocReader :: (ReaderOptions -> String -> Either PandocError Pandoc) -> String -> IO String
-mkPandocReader pReader = mkPandocReaderWith pReader id pandocToHTML
+mkPandocReader :: (ReaderOptions -> String -> PandocIO Pandoc) -> String -> IO String
+mkPandocReader pReader = mkPandocReaderWith pReader pure pandocToHTML
 
 -- | Like `mkPandocReader`, but allows you to provide both a @'Pandoc' -> 'Pandoc'@ transformation,
--- which is great for things like relativizing links or running transforms over specific document elements. 
+-- which is great for things like relativizing links or running transforms over specific document elements.
 -- See https://hackage.haskell.org/package/pandoc-lens for some useful tranformation helpers. You also specify
 -- the tranformation from @Pandoc -> String@ which allows you to pick the output format of the reader.
 -- If you're unsure what to use in this slot, the pandocToHTML function is a good choice.
-mkPandocReaderWith :: (ReaderOptions -> String -> Either PandocError Pandoc) -> (Pandoc -> Pandoc) -> (Pandoc -> String) -> String -> IO String
-mkPandocReaderWith pReader transformer writer content = writer . transformer <$> runPandocReader (pReader def) content
+mkPandocReaderWith :: (ReaderOptions -> String -> PandocIO Pandoc) -> (Pandoc -> PandocIO Pandoc) -> (Pandoc -> PandocIO String) -> String -> IO String
+mkPandocReaderWith pReader transformer writer content =
+  runPandoc $ writer
+          =<< transformer
+          =<< pReader def{readerExtensions = githubMarkdownExtensions}
+                      content
 
 -- | A simple helper which renders pandoc to HTML; good for use with 'mkPandocReaderWith'
-pandocToHTML :: Pandoc -> String
-pandocToHTML = writeHtmlString def{writerHighlight=True}
+pandocToHTML :: Pandoc -> PandocIO String
+pandocToHTML p = fmap unpack $ writeHtml5String def{writerHighlightStyle = Just pygments} p
 
 -- | Runs the Pandoc reader handling errors.
-runPandocReader :: (MonadThrow m) => (String -> Either PandocError Pandoc) -> String -> m Pandoc
-runPandocReader panReader source =
-  case panReader source of
-    Left err -> throwM err
-    Right pandoc -> return pandoc
+runPandoc :: PandocIO a -> IO a
+runPandoc m = do
+  z <- flip evalStateT def $ runExceptT $ unPandocIO m
+  case z of
+    Left e  -> throwM e
+    Right a -> pure a
 
 -- | Reads markdown files into html
 markdownReader :: String -> IO String
-markdownReader = mkPandocReader readMarkdown
+markdownReader = mkPandocReader $ \ro s -> readMarkdown ro $ pack s
 
 -- | Reads text files without processing
-textReader :: String -> IO String
-textReader = return
+textReader :: String -> PandocIO String
+textReader = pure

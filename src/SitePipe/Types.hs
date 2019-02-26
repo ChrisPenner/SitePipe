@@ -44,7 +44,7 @@ data Settings = Settings
 data SitePipeError =
   YamlErr String String
     | PParseErr P.ParseError
-    | MParseErr (MP.ParseError (MP.Token String) MPErr)
+    | MParseErr (MP.ParseErrorBundle String Void)
     | PandocErr PandocError
     | JSONErr String String
     | TemplateParseErr P.ParseError
@@ -55,7 +55,7 @@ instance Show SitePipeError where
   show (YamlErr path err) = "YAML Parse Error in " ++ path ++ ":\n" ++ err
   show (PandocErr err) = "Pandoc Error: " ++ show err
   show (PParseErr err) = "Template Error: " ++ show err
-  show (MParseErr err) = "Meta-data Error: " ++ MP.parseErrorPretty err
+  show (MParseErr err) = "Meta-data Error: " ++ MP.errorBundlePretty err
   show (JSONErr path err) = "JSON Parse Error in " ++ path ++ ":\n" ++ err
   show (TemplateParseErr err) = "Template Parse Error: " ++ show err
   show (TemplateInterpolateErr path errs) =
