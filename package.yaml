@@ -1,0 +1,46 @@
+name: sitepipe
+version: '0.4.0.0'
+synopsis: A simple to understand static site generator
+category: Web
+author: Chris Penner
+maintainer: christopher.penner@gmail.com
+copyright: 2017 Chris Penner
+license: BSD3
+github: ChrisPenner/sitepipe
+tested-with: GHC==8.0.2 GHC==8.2.1
+extra-source-files:
+- README.md
+dependencies:
+- base
+- optparse-applicative
+- unordered-containers
+- directory
+- filepath
+- megaparsec
+- mtl
+- pandoc
+- yaml
+- mustache
+- bytestring
+- text
+- parsec
+- exceptions
+- Glob
+- lens-aeson
+- lens
+- aeson
+- shelly
+- MissingH
+- containers
+- transformers
+library:
+  source-dirs: src
+  exposed-modules:
+  - SitePipe
+  - SitePipe.Pipes
+  - SitePipe.Readers
+  - SitePipe.Templating
+  - SitePipe.Files
+  - SitePipe.Parse
+  - SitePipe.Types
+  - SitePipe.Utilities
