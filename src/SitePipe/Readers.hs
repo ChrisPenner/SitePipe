@@ -16,7 +16,7 @@ module SitePipe.Readers
   ) where
 
 import Control.Monad.Trans.Except
-import Control.Monad.Trans.State.Strict
+import Control.Monad.Trans.State
 import Control.Monad.Catch
 import Text.Pandoc
 import Text.Pandoc.Options
