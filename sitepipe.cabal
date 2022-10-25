@@ -1,13 +1,13 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.31.2.
+-- This file has been generated from package.yaml by hpack version 0.34.4.
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 3616475eec5c75349ec356fdb80cf766bb5e195fb279b6e02fad093ae9abe840
+-- hash: 7e40b9776705eedf82dd97e4999739013a344bbeb230c00a75b169c1f995a501
 
 name:           sitepipe
-version:        0.4.0.0
+version:        0.4.0.1
 synopsis:       A simple to understand static site generator
 category:       Web
 homepage:       https://github.com/ChrisPenner/sitepipe#readme
@@ -17,7 +17,8 @@ maintainer:     christopher.penner@gmail.com
 copyright:      2017 Chris Penner
 license:        BSD3
 license-file:   LICENSE
-tested-with:    GHC==8.0.2 GHC==8.2.1
+tested-with:
+    GHC==8.0.2 GHC==8.2.1
 build-type:     Simple
 extra-source-files:
     README.md
